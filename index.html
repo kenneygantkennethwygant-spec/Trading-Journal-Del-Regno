@@ -397,9 +397,15 @@ a:hover{text-decoration:underline}
     </div>
   </div>
 
-  <div class="notice notice-info" id="rule-notice" contenteditable="false">
+  <div class="notice notice-info" style="align-items:flex-start">
     <span>ℹ</span>
-    <span id="rule-notice-text">Strategia: doppia rottura strutturale M5 con trigger di assorbimento in M1. R:R fisso 1:2. Asset: GER40.</span>
+    <div id="rule-notice-text" contenteditable="true" spellcheck="false" oninput="markDirty()"
+      style="flex:1;outline:none;border-bottom:1px dashed transparent;transition:border-color .15s;cursor:text"
+      onmouseover="this.style.borderBottomColor='rgba(59,130,246,.4)'"
+      onmouseout="this.style.borderBottomColor='transparent'"
+      onfocus="this.style.borderBottomColor='rgba(59,130,246,.7)'"
+      onblur="this.style.borderBottomColor='transparent'"
+      >Strategia: doppia rottura strutturale M5 con trigger di assorbimento in M1. R:R fisso 1:2. Asset: GER40.</div>
   </div>
 
   <!-- FLOW STATICO (editabile) -->
@@ -651,13 +657,40 @@ a:hover{text-decoration:underline}
 
 <!-- ── BALANCE ────────────────────────────────────── -->
 <div class="page" id="page-balance">
-  <div class="page-title">Balance e Drawdown</div>
-  <div class="page-sub">Curva di equity della sessione attiva.</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+    <div>
+      <div class="page-title">Balance e Statistiche Avanzate</div>
+      <div class="page-sub" style="margin-bottom:0">Curva di equity, drawdown, e tutti i KPI della sessione attiva.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" onclick="exportAllData()" title="Esporta tutti i dati in JSON (backup completo)">⬇ Esporta Backup</button>
+      <label class="btn btn-ghost" style="cursor:pointer" title="Importa un backup JSON precedentemente esportato">
+        ⬆ Importa Backup
+        <input type="file" accept=".json" style="display:none" onchange="importAllData(event)">
+      </label>
+    </div>
+  </div>
+
+  <div class="notice notice-info" style="margin-bottom:14px">
+    <span>💾</span>
+    <span><strong>Backup dati:</strong> usa <em>Esporta Backup</em> per salvare tutto in un file JSON. Importalo su qualsiasi browser per ritrovare tutti i tuoi dati, sessioni e impostazioni.</span>
+  </div>
+
+  <!-- KPI principali -->
   <div class="kpi-grid" id="balance-kpi"></div>
+
+  <!-- Statistiche avanzate (dall'Excel originale) -->
+  <div class="card">
+    <div class="card-title">Statistiche Avanzate</div>
+    <div id="advanced-stats"></div>
+  </div>
+
+  <!-- Curva equity -->
   <div class="card">
     <div class="card-title">Curva di Equity</div>
     <canvas id="chart-balance" height="200"></canvas>
   </div>
+
   <div class="grid-2">
     <div class="card">
       <div class="card-title">Drawdown nel Tempo</div>
@@ -667,6 +700,11 @@ a:hover{text-decoration:underline}
       <div class="card-title">P&amp;L Mensile</div>
       <canvas id="chart-mensile" height="180"></canvas>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">P&amp;L Cumulativo nel Tempo</div>
+    <canvas id="chart-pnl-dist" height="160"></canvas>
   </div>
 </div>
 
@@ -1075,18 +1113,22 @@ function saveFlowSteps() {
   const steps = document.querySelectorAll('.flow-step');
   if (!steps.length) return;
   const data = Array.from(steps).map(s => ({
-    num:   s.querySelector('.step-num')  ? s.querySelector('.step-num').innerText  : '',
-    title: s.querySelector('.step-title')? s.querySelector('.step-title').innerText: '',
-    desc:  s.querySelector('.step-desc') ? s.querySelector('.step-desc').innerText : '',
+    num:   s.querySelector('.step-num')   ? s.querySelector('.step-num').innerText   : '',
+    title: s.querySelector('.step-title') ? s.querySelector('.step-title').innerText : '',
+    desc:  s.querySelector('.step-desc')  ? s.querySelector('.step-desc').innerText  : '',
   }));
-  localStorage.setItem(FLOW_KEY, JSON.stringify(data));
+  const noticeEl = document.getElementById('rule-notice-text');
+  const notice = noticeEl ? noticeEl.innerText : '';
+  localStorage.setItem(FLOW_KEY, JSON.stringify({ steps: data, notice }));
 }
 
 function loadFlowSteps() {
   try {
     const raw = localStorage.getItem(FLOW_KEY);
     if (!raw) return;
-    const data = JSON.parse(raw);
+    const saved = JSON.parse(raw);
+    // Support both old format (array) and new format ({steps, notice})
+    const data = Array.isArray(saved) ? saved : (saved.steps || []);
     const steps = document.querySelectorAll('.flow-step');
     data.forEach((d, i) => {
       if (!steps[i]) return;
@@ -1097,6 +1139,10 @@ function loadFlowSteps() {
       if (titleEl) titleEl.innerText = d.title;
       if (descEl)  descEl.innerText  = d.desc;
     });
+    const noticeEl = document.getElementById('rule-notice-text');
+    if (noticeEl && !Array.isArray(saved) && saved.notice) {
+      noticeEl.innerText = saved.notice;
+    }
   } catch(e) {}
 }
 
@@ -2261,29 +2307,115 @@ function renderBuiltinWidget(w, t, tp, sl, be, tot) {
 function renderBalance() {
   const sorted=[...currentTrades()].sort((a,b)=>new Date(a.data)-new Date(b.data));
   const init=parseFloat(document.getElementById('eq-iniziale').value)||200000;
-  let eq=init, mxEq=init;
-  const eqC=[init], ddC=[0];
-  const labels=['Inizio'];
+  const riskPct=(parseFloat(document.getElementById('rischio-pct').value)||1)/100;
+
+  // ── Build equity curve + drawdown ──
+  let eq=init, mxEq=init, maxDD=0, ddDays=0, maxDdDays=0, ddStart=null;
+  const eqC=[init], ddC=[0], labels=['Inizio'];
   sorted.forEach((t,i)=>{
     eq+=(t.pnl||0);
-    mxEq=Math.max(mxEq,eq);
-    eqC.push(eq);
-    ddC.push(((mxEq-eq)/mxEq*100).toFixed(2));
+    if(eq>mxEq){ mxEq=eq; ddStart=null; ddDays=0; }
+    else {
+      if(!ddStart) ddStart=i;
+      ddDays=i-ddStart;
+      maxDdDays=Math.max(maxDdDays,ddDays);
+    }
+    const dd=((mxEq-eq)/mxEq*100);
+    maxDD=Math.max(maxDD,dd);
+    eqC.push(eq); ddC.push(dd.toFixed(2));
     labels.push(`#${i+1}`);
   });
+
+  const tot=sorted.length;
   const totPnl=eq-init;
-  const maxDD=Math.max(...ddC);
   const gain=((totPnl/init)*100).toFixed(2);
+  const tp=sorted.filter(x=>x.esito==='TP').length;
+  const sl=sorted.filter(x=>x.esito==='SL').length;
+  const be=sorted.filter(x=>x.esito==='BE').length;
+  const wr=tot?((tp/tot)*100).toFixed(1):0;
+  const wrNoBe=( tp+sl )?((tp/(tp+sl))*100).toFixed(1):0;
 
+  // ── Streak analysis ──
+  let curWin=0,curLoss=0,curNoloss=0,maxWin=0,maxLoss=0,maxNoloss=0;
+  sorted.forEach(t=>{
+    if(t.esito==='TP'){ curWin++;curNoloss++;maxWin=Math.max(maxWin,curWin);maxNoloss=Math.max(maxNoloss,curNoloss);curLoss=0; }
+    else if(t.esito==='SL'){ curLoss++;maxLoss=Math.max(maxLoss,curLoss);curWin=0;curNoloss=0; }
+    else { curNoloss++;maxNoloss=Math.max(maxNoloss,curNoloss);curWin=0;curLoss=0; }
+  });
+
+  // ── P&L stats ──
+  const wins=sorted.filter(x=>x.pnl>0).map(x=>x.pnl);
+  const losses=sorted.filter(x=>x.pnl<0).map(x=>x.pnl);
+  const grossProfit=wins.reduce((s,v)=>s+v,0);
+  const grossLoss=Math.abs(losses.reduce((s,v)=>s+v,0));
+  const pf=grossLoss>0?(grossProfit/grossLoss).toFixed(2):(grossProfit>0?'∞':'0');
+  const avgWin=wins.length?(grossProfit/wins.length).toFixed(0):0;
+  const avgLoss=losses.length?(grossLoss/losses.length).toFixed(0):0;
+  const avgTrade=tot?(totPnl/tot).toFixed(0):0;
+  const bestTrade=tot?Math.max(...sorted.map(x=>x.pnl||0)):0;
+  const worstTrade=tot?Math.min(...sorted.map(x=>x.pnl||0)):0;
+
+  // ── Expectancy (per unit risked) ──
+  const expectancy=tot?( (tp/tot)*(avgWin/(init*riskPct)) - (sl/tot) ).toFixed(4):0;
+
+  // ── Daily returns for Sharpe/Calmar ──
+  const dailyMap={};
+  sorted.forEach(t=>{ const d=t.data; dailyMap[d]=(dailyMap[d]||0)+(t.pnl||0); });
+  const dailyRet=Object.values(dailyMap).map(v=>v/init);
+  const avgDaily=dailyRet.length?dailyRet.reduce((s,v)=>s+v,0)/dailyRet.length:0;
+  const stdDaily=dailyRet.length>1?Math.sqrt(dailyRet.reduce((s,v)=>s+(v-avgDaily)**2,0)/(dailyRet.length-1)):0;
+  const sharpe=stdDaily>0?((avgDaily/stdDaily)*Math.sqrt(252)).toFixed(2):0;
+  const annReturn=(totPnl/init)*(252/Math.max(Object.keys(dailyMap).length,1));
+  const calmar=maxDD>0?(annReturn/(maxDD/100)).toFixed(2):0;
+
+  // ── Calendar stats ──
+  const tradeDays=[...new Set(sorted.map(x=>x.data))].length;
+  const mediaTradeGiorno=tradeDays?( tot/tradeDays ).toFixed(2):0;
+
+  // ── Recovery factor ──
+  const recoveryTrades=maxDD>0?Math.ceil((maxDD/100*init)/(totPnl/Math.max(tot,1))):0;
+
+  // ── KPI ──
   document.getElementById('balance-kpi').innerHTML=[
-    {l:'Equity Corrente',v:`€${Math.round(eq)}`,c:eq>=init?'green':'red'},
-    {l:'Profitto Totale',v:`€${Math.round(totPnl)}`,c:totPnl>=0?'green':'red'},
-    {l:'Rendimento %',v:`${gain}%`,c:gain>=0?'green':'red'},
-    {l:'Max Drawdown',v:`${maxDD}%`,c:maxDD>10?'red':maxDD>5?'':'green'},
-    {l:'Totale Trade',v:sorted.length,c:'blue'},
-    {l:'Equity Max',v:`€${Math.round(mxEq)}`,c:''},
-  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value ${k.c}">${k.v}</div></div>`).join('');
+    {l:'Equity Corrente',  v:`€${Math.round(eq).toLocaleString()}`,           c:eq>=init?'green':'red'},
+    {l:'Profitto Netto',   v:`€${Math.round(totPnl).toLocaleString()}`,       c:totPnl>=0?'green':'red'},
+    {l:'Rendimento %',     v:`${gain}%`,                                       c:gain>=0?'green':'red'},
+    {l:'Win Rate',         v:`${wr}%`,                                         c:wr>=50?'green':'red'},
+    {l:'WR (no BE)',       v:`${wrNoBe}%`,                                     c:wrNoBe>=50?'green':'red'},
+    {l:'Trade Totali',     v:tot,                                              c:'blue'},
+    {l:'TP / SL / BE',    v:`${tp} / ${sl} / ${be}`,                         c:''},
+    {l:'Profit Factor',   v:pf,                                                c:parseFloat(pf)>=1.5?'green':parseFloat(pf)<1?'red':''},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value ${k.c}" style="font-size:15px">${k.v}</div></div>`).join('');
 
+  // ── Advanced Stats Table ──
+  const advEl = document.getElementById('advanced-stats');
+  if(advEl) advEl.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+      ${[
+        ['Max Drawdown',             `${maxDD.toFixed(2)}%`,            maxDD>10?'red':maxDD>5?'yellow':'green'],
+        ['Max Streak Win',           maxWin,                             maxWin>=5?'green':''],
+        ['Max Streak Loss',          maxLoss,                            maxLoss>=4?'red':''],
+        ['Max Streak No-Loss',       maxNoloss,                          maxNoloss>=5?'green':''],
+        ['Avg Trade (P&L)',          `€${avgTrade}`,                     avgTrade>=0?'green':'red'],
+        ['Avg Win',                  `€${avgWin}`,                       'green'],
+        ['Avg Loss',                 `€${avgLoss}`,                      'red'],
+        ['Best Trade',               `€${Math.round(bestTrade)}`,        'green'],
+        ['Worst Trade',              `€${Math.round(worstTrade)}`,       'red'],
+        ['Sharpe Ratio (ann.)',      sharpe,                             parseFloat(sharpe)>=1?'green':parseFloat(sharpe)<0?'red':''],
+        ['Calmar Ratio',             calmar,                             parseFloat(calmar)>=2?'green':parseFloat(calmar)<1?'red':''],
+        ['Expectancy (R)',           expectancy,                         parseFloat(expectancy)>0?'green':'red'],
+        ['Giornate con trade',       tradeDays,                          ''],
+        ['Media trade/giorno',       mediaTradeGiorno,                   ''],
+        ['Recovery (n° trade)',      recoveryTrades||'—',               ''],
+        ['Max DD Duration',          `${maxDdDays} trade`,              maxDdDays>20?'red':''],
+      ].map(([l,v,c])=>`
+        <div class="kpi" style="padding:11px 14px">
+          <div class="kpi-label">${l}</div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:${c==='green'?'var(--green)':c==='red'?'var(--red)':c==='yellow'?'var(--yellow)':'var(--text)'}">${v}</div>
+        </div>`).join('')}
+    </div>`;
+
+  // ── Charts ──
   dC('chart-balance');
   const cb=document.getElementById('chart-balance').getContext('2d');
   const gr=cb.createLinearGradient(0,0,0,200);
@@ -2310,6 +2442,83 @@ function renderBalance() {
     data:{labels:mK,datasets:[{data:mV,backgroundColor:mV.map(v=>v>=0?'rgba(16,185,129,.7)':'rgba(239,68,68,.7)'),borderRadius:4,borderWidth:0}]},
     options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'}}}}
   });
+
+  // ── P&L distribution (monthly returns as line) ──
+  dC('chart-pnl-dist');
+  const distEl = document.getElementById('chart-pnl-dist');
+  if(distEl && mK.length>0){
+    const cumPnl=[]; let cum=0;
+    mK.forEach(k=>{ cum+=monthly[k]; cumPnl.push(cum); });
+    CI['chart-pnl-dist']=new Chart(distEl.getContext('2d'),{
+      type:'line',
+      data:{labels:mK,datasets:[{data:cumPnl,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.1)',fill:true,pointRadius:mK.length>24?0:3,tension:.4,borderWidth:2}]},
+      options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#94a3b8',callback:v=>'€'+Math.round(v)},grid:{color:'#252d42'}}}}
+    });
+  }
+}
+
+// ════════════════════════════════════════════
+// EXPORT / IMPORT COMPLETO
+// ════════════════════════════════════════════
+function exportAllData() {
+  const payload = {
+    version: 4,
+    exportDate: new Date().toISOString(),
+    store,
+    rules: localStorage.getItem(RULES_KEY),
+    flow:  localStorage.getItem(FLOW_KEY),
+    formCfg: localStorage.getItem(FORM_CFG_KEY),
+    analytics: localStorage.getItem(ANALYTICS_KEY),
+    settings: localStorage.getItem(SETTINGS_KEY),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tradejournal_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importAllData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      if (!payload.store || !payload.store.backtests) {
+        alert('File non valido o formato non riconosciuto.');
+        return;
+      }
+      if (!confirm(`Importare il backup del ${payload.exportDate?.slice(0,10) || 'data sconosciuta'}?\nSovrascriverà tutti i dati attuali.`)) return;
+      // Restore store
+      store = payload.store;
+      saveStore();
+      // Restore other keys
+      if (payload.rules)     localStorage.setItem(RULES_KEY, payload.rules);
+      if (payload.flow)      localStorage.setItem(FLOW_KEY, payload.flow);
+      if (payload.formCfg)   localStorage.setItem(FORM_CFG_KEY, payload.formCfg);
+      if (payload.analytics) localStorage.setItem(ANALYTICS_KEY, payload.analytics);
+      if (payload.settings)  localStorage.setItem(SETTINGS_KEY, payload.settings);
+      // Reload everything
+      loadRules();
+      loadSettings();
+      loadFormCfg();
+      loadAnalyticsLayout();
+      renderBTSelector();
+      updateBTBadge();
+      renderFormBTName();
+      renderRulesPage();
+      loadFlowSteps();
+      renderDynamicForm();
+      initForm();
+      alert('✅ Backup importato con successo!');
+    } catch(err) {
+      alert('Errore nel file: ' + err.message);
+    }
+    // reset input
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ════════════════════════════════════════════
