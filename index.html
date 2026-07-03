@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Journal — Doppia Rottura Strutturale</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{--bg:#0b0e13;--bg2:#111520;--bg3:#181e2b;--card:#1a2035;--border:#252d42;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;position:sticky;top:0;z-index:200;height:52px}
+.nav-logo{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.05em;margin-right:20px;white-space:nowrap;flex-shrink:0}
+.nav-tabs{display:flex;gap:0;overflow-x:auto;flex:1}
+.nav-tab{padding:0 15px;height:52px;background:none;border:none;color:var(--text2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* BACKTEST BAR */
+.bt-bar{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:52px;z-index:190}
+.bt-bar label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.bt-select{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;min-width:200px;cursor:pointer}
+.bt-select:focus{border-color:var(--accent)}
+.bt-badge{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:4px;background:rgba(59,130,246,.15);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
+
+/* PAGES */
+.page{display:none;padding:20px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.page-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:18px}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.kpi-value{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--text)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.red{color:var(--red)}
+.kpi-value.blue{color:var(--accent)}
+
+/* GRIDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:880px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:var(--bg3);color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--bg3)}
+tbody td{padding:9px 11px;color:var(--text2);white-space:nowrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.badge-tp{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-sl{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-be{background:rgba(245,158,11,.15);color:var(--yellow)}
+.badge-long{background:rgba(59,130,246,.15);color:var(--accent)}
+.badge-short{background:rgba(239,68,68,.12);color:#f87171}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.form-group select option{background:var(--bg3)}
+.form-group textarea{resize:vertical;min-height:65px}
+.form-full{grid-column:1/-1}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans);display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-danger:hover{background:rgba(239,68,68,.3)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-warn{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3)}
+.btn-warn:hover{background:rgba(245,158,11,.25)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+/* NOTICE */
+.notice{padding:10px 14px;border-radius:7px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
+.notice-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd}
+.notice-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d}
+.notice-ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#6ee7b7}
+
+/* SEARCH ROW */
+.search-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.search-row input,.search-row select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 11px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none}
+.search-row input{flex:1;min-width:150px}
+.search-row input:focus,.search-row select:focus{border-color:var(--accent)}
+
+/* SESSION CARDS */
+.session-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.session-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px;text-align:center}
+.session-card .s-name{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.session-card .s-wr{font-family:var(--mono);font-size:18px;font-weight:600}
+.session-card .s-sub{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* HEATMAP */
+.heatmap-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:10px}
+.heatmap-cell{aspect-ratio:1;border-radius:2px;background:var(--bg3);position:relative;cursor:default}
+.heatmap-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px}
+
+/* DAY BARS */
+.day-bars{display:flex;gap:8px;align-items:flex-end;height:130px}
+.day-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;cursor:default}
+.day-bar{width:100%;border-radius:3px 3px 0 0;min-height:4px}
+.day-bar-label{font-size:10px;color:var(--text3);font-weight:600}
+.day-bar-val{font-size:10px;color:var(--text2);font-family:var(--mono)}
+
+/* TOOLTIP */
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e2a3d;border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 8px;border-radius:5px;white-space:nowrap;z-index:50;pointer-events:none}
+
+/* RULE BLOCKS — EDITABLE */
+.rule-block{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px}
+.rule-block-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rule-block-header h3{font-size:13px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px;flex:1}
+.rule-block-header h3::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;display:inline-block;flex-shrink:0}
+.rule-block-header h3 input{background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--accent);font-size:13px;font-weight:600;font-family:var(--sans);outline:none;width:100%;padding:2px 4px}
+.rule-block-header h3 input:focus{border-bottom-color:var(--accent)}
+.rule-content textarea{width:100%;background:transparent;border:1px dashed transparent;border-radius:4px;color:var(--text2);font-family:var(--sans);font-size:13px;line-height:1.6;resize:vertical;min-height:90px;padding:6px 8px;outline:none;transition:border-color .15s}
+.rule-content textarea:focus{border-color:var(--border);background:rgba(255,255,255,.02)}
+.rule-content textarea:hover{border-color:var(--border)}
+.rules-hint{font-size:11px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+
+/* FLOW */
+.flow{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}
+.flow-step{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;flex:1;min-width:140px}
+.flow-step .step-num{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px;border-bottom:1px dashed transparent;transition:border-color .15s;border-radius:2px;padding:1px 3px;cursor:text;outline:none}
+.flow-step .step-num:hover{border-bottom-color:var(--accent)}
+.flow-step .step-num:focus{background:rgba(59,130,246,.08);border-bottom-color:var(--accent)}
+.flow-step .step-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;border-bottom:1px dashed transparent;transition:border-color .15s;border-radius:2px;padding:1px 3px;cursor:text;outline:none}
+.flow-step .step-title:hover{border-bottom-color:var(--border)}
+.flow-step .step-title:focus{background:rgba(255,255,255,.03);border-bottom-color:var(--border)}
+.flow-step .step-desc{font-size:11.5px;color:var(--text2);line-height:1.5;border:1px dashed transparent;transition:border-color .15s;border-radius:4px;padding:3px 4px;cursor:text;outline:none}
+.flow-step .step-desc:hover{border-color:var(--border)}
+.flow-step .step-desc:focus{background:rgba(255,255,255,.02);border-color:var(--border)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:480px;width:100%}
+.modal h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6}
+.modal .btn-row{justify-content:flex-end}
+
+/* CHECKBOX COL */
+.cb-col{width:36px;text-align:center}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+
+/* SELECT ALL ROW */
+.select-all-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;color:var(--text2)}
+.select-all-row label{cursor:pointer;display:flex;align-items:center;gap:6px}
+
+/* TAG */
+.tag{display:inline-block;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:11px;color:var(--text2)}
+
+/* ── FORM BUILDER ────────────────────────────────── */
+.fb-section {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.fb-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.fb-section-name {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
+  outline: none;
+  flex: 1;
+  min-width: 140px;
+}
+
+.fb-section-name:focus { border-color: var(--accent); }
+
+.fb-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fb-field {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-field-row {
+  display: grid;
+  grid-template-columns: 1fr 100px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.fb-field-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.fb-field-move-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.15);
+  border-radius: 5px;
+}
+
+.fb-move-label {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fb-move-sec {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--accent);
+  font-size: 11px;
+  font-family: var(--sans);
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+}
+
+.fb-move-sec:focus { border-color: var(--accent); }
+
+.fb-field-label {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 9px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--sans);
+  outline: none;
+  width: 100%;
+}
+
+.fb-field-label:focus { border-color: var(--accent); }
+
+.fb-field-type {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 7px;
+  color: var(--text2);
+  font-size: 11px;
+  font-family: var(--mono);
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.fb-field-type:focus { border-color: var(--accent); }
+
+.fb-field-opts {
+  grid-column: 1 / -1;
+  background: var(--bg3);
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  padding: 7px 9px;
+  color: var(--text2);
+  font-size: 12px;
+  font-family: var(--mono);
+  resize: vertical;
+  min-height: 65px;
+  outline: none;
+  width: 100%;
+}
+
+.fb-field-opts:focus { border-color: var(--accent); }
+
+.fb-opts-hint {
+  grid-column: 1 / -1;
+  font-size: 10.5px;
+  color: var(--text3);
+  margin-top: -4px;
+}
+
+.fb-opts-hint code {
+  background: var(--bg);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.fb-add-field {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* FORM BUILDER */
+.fb-section{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px}
+.fb-section-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.fb-section-name{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text);font-family:var(--sans);font-size:13px;font-weight:600;outline:none;flex:1}
+.fb-section-name:focus{border-color:var(--accent)}
+.fb-fields{display:flex;flex-direction:column;gap:8px}
+.fb-field{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.fb-field-label{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;min-width:130px;flex:1}
+.fb-field-label:focus{border-color:var(--accent)}
+.fb-field-type{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;cursor:pointer}
+.fb-field-opts{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:5px 9px;color:var(--text2);font-family:var(--mono);font-size:11px;outline:none;min-height:55px;resize:vertical}
+.fb-field-opts:focus{border-color:var(--accent)}
+.fb-opts-hint{font-size:10px;color:var(--text3);margin-top:3px;width:100%}
+.fb-add-field{display:flex;align-items:center;gap:6px;margin-top:8px}
+
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-logo">📊 TRADE JOURNAL</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('regole',this)">Regole</button>
+    <button class="nav-tab" onclick="showPage('nuovo',this)">Nuovo Trade</button>
+    <button class="nav-tab" onclick="showPage('storico',this)">Storico</button>
+    <button class="nav-tab" onclick="showPage('analytics',this)">Analytics</button>
+    <button class="nav-tab" onclick="showPage('balance',this)">Balance</button>
+  </div>
+</nav>
+
+<!-- ══ BACKTEST BAR ══════════════════════════════════ -->
+<div class="bt-bar">
+  <label>Sessione Attiva:</label>
+  <select class="bt-select" id="bt-selector" onchange="switchBT(this.value)"></select>
+  <span class="bt-badge" id="bt-badge">—</span>
+  <button class="btn btn-ghost btn-sm" onclick="showModal('modal-new-bt')">＋ Nuova</button>
+  <button class="btn btn-warn btn-sm" onclick="showModal('modal-rename-bt')">✎ Rinomina</button>
+  <button class="btn btn-danger btn-sm" onclick="showModal('modal-delete-bt')">🗑 Elimina Sessione</button>
+</div>
+
+<!-- ══ PAGES ══════════════════════════════════════════ -->
+
+<!-- ── REGOLE ──────────────────────────────────────── -->
+<div class="page active" id="page-regole">
+  <div class="page-title">Regole Strategia</div>
+  <div class="page-sub">Le regole sono <strong>modificabili</strong> — clicca su qualsiasi testo per editarlo. Asset principale: <span id="asset-display" style="color:var(--accent);font-family:var(--mono)">GER40</span></div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="rules-hint" style="margin-bottom:0">
+      ✏️ Clicca su titoli e testo per modificare. Premi <strong style="color:var(--accent)">💾 Salva Regole</strong> per confermare le modifiche.
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="rules-save-status" style="font-size:12px;color:var(--text3)"></span>
+      <button class="btn btn-primary" onclick="saveRulesExplicit()" id="btn-save-rules">💾 Salva Regole</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetRulesToDefault()">↺ Ripristina default</button>
+    </div>
+  </div>
+
+  <div class="notice notice-info" id="rule-notice" contenteditable="false">
+    <span>ℹ</span>
+    <span id="rule-notice-text">Strategia: doppia rottura strutturale M5 con trigger di assorbimento in M1. R:R fisso 1:2. Asset: GER40.</span>
+  </div>
+
+  <!-- FLOW STATICO (editabile) -->
+  <div class="card">
+    <div class="card-title">Flusso Operativo</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-num" contenteditable="true" spellcheck="false" oninput="markDirty()">01 / M5 BIAS</div>
+        <div class="step-title" contenteditable="true" spellcheck="false" oninput="markDirty()">Doppia Rottura Strutturale</div>
+        <div class="step-desc" contenteditable="true" spellcheck="false" oninput="markDirty()">Identificare la direzione in M5 tramite doppia rottura di struttura. Valutare la candela volumetrica con impulso maggiore e volumi inferiori come zona chiave.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" contenteditable="true" spellcheck="false" oninput="markDirty()">02 / ZONA</div>
+        <div class="step-title" contenteditable="true" spellcheck="false" oninput="markDirty()">Ritracciamento / Test</div>
+        <div class="step-desc" contenteditable="true" spellcheck="false" oninput="markDirty()">Attendere il ritracciamento verso la zona oppure un test di essa. Il prezzo deve rientrare in zona prima dell'ingresso.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" contenteditable="true" spellcheck="false" oninput="markDirty()">03 / M1 TRIGGER</div>
+        <div class="step-title" contenteditable="true" spellcheck="false" oninput="markDirty()">Assorbimento</div>
+        <div class="step-desc" contenteditable="true" spellcheck="false" oninput="markDirty()">Scendere in M1 e attendere l'assorbimento: candela piccola + picco volumi alti, seguita da candela opposta più grande con volumi inferiori.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" contenteditable="true" spellcheck="false" oninput="markDirty()">04 / ESECUZIONE</div>
+        <div class="step-title" contenteditable="true" spellcheck="false" oninput="markDirty()">Entrata 1:2 Fisso</div>
+        <div class="step-desc" contenteditable="true" spellcheck="false" oninput="markDirty()">R:R fisso 1:2. SL sotto/sopra la zona. TP al doppio del rischio.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCCHI REGOLE EDITABILI -->
+  <div class="grid-2" id="rules-blocks-container">
+    <!-- rendered by JS -->
+  </div>
+
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-ghost btn-sm" onclick="addRuleBlock()">＋ Aggiungi blocco regole</button>
+    <span style="font-size:11px;color:var(--text3)">Le regole sono condivise tra tutte le sessioni.</span>
+  </div>
+
+  <!-- ASSET SETTINGS -->
+  <div class="card">
+    <div class="card-title">Impostazioni</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <div class="form-group">
+        <label>Asset corrente</label>
+        <input type="text" id="asset-input" placeholder="GER40, EURUSD…" oninput="updateAsset(this.value)">
+      </div>
+      <div class="form-group">
+        <label>Conto default</label>
+        <input type="text" id="conto-default" placeholder="BACKTEST / LIVE">
+      </div>
+      <div class="form-group">
+        <label>Equity iniziale (€)</label>
+        <input type="number" id="eq-iniziale">
+      </div>
+      <div class="form-group">
+        <label>Rischio % per trade</label>
+        <input type="number" id="rischio-pct" step="0.1" min="0.1" max="5">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Salva Impostazioni</button>
+      <span id="settings-save-status" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── NUOVO TRADE ──────────────────────────────────── -->
+<div class="page" id="page-nuovo">
+  <div class="page-title">Registra Nuovo Trade</div>
+  <div class="page-sub">Form personalizzabile. Premi <strong style="color:var(--accent)">✏️ Modifica Form</strong> per aggiungere, rimuovere o rinominare campi e opzioni.</div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="notice notice-info" style="margin-bottom:0;flex:1">
+      <span>📁</span>
+      <span>Sessione attiva: <strong id="form-bt-name">—</strong></span>
+    </div>
+    <button class="btn btn-ghost" onclick="showModal('modal-form-builder')" style="white-space:nowrap">✏️ Modifica Form</button>
+  </div>
+
+  <!-- FORM DINAMICO -->
+  <div class="card" style="margin-bottom:0" id="dynamic-form-card">
+    <!-- campi fissi obbligatori -->
+    <div class="card-title">Dati Obbligatori</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+      <div class="form-group">
+        <label>Data ★</label>
+        <input type="date" id="f-data">
+      </div>
+      <div class="form-group">
+        <label>Asset ★</label>
+        <input type="text" id="f-asset" placeholder="GER40">
+      </div>
+      <div class="form-group">
+        <label>Position ★</label>
+        <select id="f-position">
+          <option value="">— Seleziona —</option>
+          <option>Long</option>
+          <option>Short</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Esito ★</label>
+        <select id="f-esito">
+          <option value="">— Seleziona —</option>
+          <option value="TP">TP ✅</option>
+          <option value="SL">SL ❌</option>
+          <option value="BE">BE ⚡</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>P&amp;L (€) ★</label>
+        <input type="number" id="f-pnl" step="0.01" placeholder="Es. 7500 o -2000">
+      </div>
+      <div class="form-group">
+        <label>Conto</label>
+        <input type="text" id="f-conto" placeholder="BACKTEST">
+      </div>
+    </div>
+
+    <!-- sezioni dinamiche -->
+    <div id="dynamic-sections-container"></div>
+
+    <hr class="divider">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="salvaTrade()">💾 Salva Trade</button>
+      <button class="btn btn-ghost" onclick="resetForm()">↺ Reset</button>
+      <span id="form-msg" style="font-size:12px"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL FORM BUILDER ──────────────────────────── -->
+<div id="modal-form-builder" class="modal-bg" style="display:none">
+  <div class="modal" style="max-width:780px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin-bottom:0">✏️ Personalizza Form</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="fb-status" style="font-size:12px;color:var(--text3)"></span>
+        <button class="btn btn-primary btn-sm" onclick="saveFormConfig()">💾 Salva</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideModal('modal-form-builder')">✕</button>
+      </div>
+    </div>
+
+    <div class="notice notice-info" style="margin-bottom:14px">
+      <span>ℹ</span>
+      <span>I campi <strong>★ obbligatori</strong> (Data, Asset, Position, Esito, P&amp;L) non si possono rimuovere. Puoi aggiungere sezioni, campi di testo/numero/select/url/textarea, e modificare le opzioni dei menu.</span>
+    </div>
+
+    <div id="fb-sections"></div>
+
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="fbAddSection()">＋ Aggiungi Sezione</button>
+      <button class="btn btn-warn btn-sm" onclick="fbResetDefault()">↺ Ripristina default</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STORICO ──────────────────────────────────────── -->
+<div class="page" id="page-storico">
+  <div class="page-title">Storico Trade</div>
+  <div class="page-sub">Trade nella sessione attiva. Seleziona per eliminare in blocco.</div>
+
+  <div class="search-row">
+    <input type="text" id="search-text" placeholder="Cerca per note, asset…" oninput="renderStorico()">
+    <select id="filter-esito" onchange="renderStorico()">
+      <option value="">Tutti gli esiti</option>
+      <option value="TP">TP</option>
+      <option value="SL">SL</option>
+      <option value="BE">BE</option>
+    </select>
+    <select id="filter-position" onchange="renderStorico()">
+      <option value="">Long + Short</option>
+      <option value="Long">Solo Long</option>
+      <option value="Short">Solo Short</option>
+    </select>
+    <select id="filter-sessione" onchange="renderStorico()">
+      <option value="">Tutte sessioni</option>
+      <option value="LONDRA">Londra</option>
+      <option value="PRE NY">Pre NY</option>
+      <option value="CASH">Cash</option>
+      <option value="ASIA">Asia</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="esportaCSV()">⬇ CSV</button>
+  </div>
+
+  <!-- SELECT ALL ROW -->
+  <div class="select-all-row">
+    <label>
+      <input type="checkbox" id="check-all" onchange="toggleSelectAll(this.checked)">
+      Seleziona tutti
+    </label>
+    <button class="btn btn-danger btn-sm" id="btn-delete-selected" style="display:none" onclick="showModal('modal-delete-selected')">
+      🗑 Elimina selezionati (<span id="selected-count">0</span>)
+    </button>
+    <button class="btn btn-warn btn-sm" onclick="showModal('modal-delete-all-trades')">
+      🗑 Elimina TUTTI i trade
+    </button>
+  </div>
+
+  <div class="card" style="padding:0;margin-bottom:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="cb-col"><input type="checkbox" id="check-all-header" onchange="toggleSelectAll(this.checked)"></th>
+            <th>#</th>
+            <th>Data</th>
+            <th>Asset</th>
+            <th>Dir.</th>
+            <th>Esito</th>
+            <th>Sessione</th>
+            <th>Ora</th>
+            <th>R:R</th>
+            <th>Asia</th>
+            <th>Weis</th>
+            <th>P&amp;L (€)</th>
+            <th>Note</th>
+            <th>Links</th>
+            <th>✕</th>
+          </tr>
+        </thead>
+        <tbody id="storico-tbody">
+          <tr><td colspan="15" class="empty-state">Nessun trade registrato.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── ANALYTICS ──────────────────────────────────── -->
+<div class="page" id="page-analytics">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+    <div>
+      <div class="page-title">Analytics</div>
+      <div class="page-sub" style="margin-bottom:0">Statistiche sulla sessione attiva. I grafici si aggiornano dai campi del tuo form.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="showModal('modal-analytics-builder')" style="white-space:nowrap">🧩 Gestisci grafici</button>
+    </div>
+  </div>
+
+  <!-- KPI fissi sempre in cima -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Contenitore dinamico grafici (ordinabile) -->
+  <div id="analytics-widgets-container"></div>
+</div>
+
+<!-- ── BALANCE ────────────────────────────────────── -->
+<div class="page" id="page-balance">
+  <div class="page-title">Balance e Drawdown</div>
+  <div class="page-sub">Curva di equity della sessione attiva.</div>
+  <div class="kpi-grid" id="balance-kpi"></div>
+  <div class="card">
+    <div class="card-title">Curva di Equity</div>
+    <canvas id="chart-balance" height="200"></canvas>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Drawdown nel Tempo</div>
+      <canvas id="chart-dd" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">P&amp;L Mensile</div>
+      <canvas id="chart-mensile" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALI ════════════════════════════════════════ -->
+
+<!-- NUOVA SESSIONE -->
+<div id="modal-new-bt" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h3>➕ Nuova Sessione Backtest</h3>
+    <p>Ogni sessione ha i suoi trade separati. Puoi creare sessioni per asset diversi, periodi diversi o strategie diverse.</p>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Nome sessione</label>
+      <input type="text" id="new-bt-name" placeholder="Es: GER40 — Luglio 2025">
+    </div>
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Asset</label>
+      <input type="text" id="new-bt-asset" placeholder="GER40">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="createBT()">✅ Crea Sessione</button>
+      <button class="btn btn-ghost" onclick="hideModal('modal-new-bt')">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- RINOMINA SESSIONE -->
+<div id="modal-rename-bt" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h3>✎ Rinomina Sessione</h3>
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Nuovo nome</label>
+      <input type="text" id="rename-bt-name" placeholder="Nuovo nome…">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="renameBT()">✅ Rinomina</button>
+      <button class="btn btn-ghost" onclick="hideModal('modal-rename-bt')">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ELIMINA SESSIONE -->
+<div id="modal-delete-bt" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h3>🗑 Elimina Sessione</h3>
+    <p>Vuoi eliminare la sessione attiva <strong id="del-bt-name-span">—</strong> con tutti i suoi trade? <span style="color:var(--red)">Questa azione è irreversibile.</span></p>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="deleteBT()">🗑 Elimina definitivamente</button>
+      <button class="btn btn-ghost" onclick="hideModal('modal-delete-bt')">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ELIMINA SELEZIONATI -->
+<div id="modal-delete-selected" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h3>🗑 Elimina Trade Selezionati</h3>
+    <p>Eliminerai <strong id="del-sel-count">0</strong> trade selezionati. Azione irreversibile.</p>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="deleteSelected()">🗑 Elimina</button>
+      <button class="btn btn-ghost" onclick="hideModal('modal-delete-selected')">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ELIMINA TUTTI I TRADE -->
+<div id="modal-delete-all-trades" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h3>⚠️ Elimina TUTTI i trade</h3>
+    <p>Stai per eliminare <strong>tutti i trade</strong> dalla sessione attiva. La sessione rimarrà ma sarà vuota. <span style="color:var(--red)">Azione irreversibile.</span></p>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="deleteAllTrades()">🗑 Svuota sessione</button>
+      <button class="btn btn-ghost" onclick="hideModal('modal-delete-all-trades')">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCRIPT ═════════════════════════════════════════ -->
+<!-- ── MODAL ANALYTICS BUILDER ─────────────────────── -->
+<div id="modal-analytics-builder" class="modal-bg" style="display:none">
+  <div class="modal" style="max-width:680px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin-bottom:0">🧩 Gestisci Grafici Analytics</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="ab-status" style="font-size:12px;color:var(--text3)"></span>
+        <button class="btn btn-primary btn-sm" onclick="saveAnalyticsLayout()">💾 Salva</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideModal('modal-analytics-builder')">✕</button>
+      </div>
+    </div>
+
+    <div class="notice notice-info" style="margin-bottom:14px">
+      <span>ℹ</span>
+      <span>Ogni campo <strong>select</strong> del tuo form genera automaticamente un grafico. Puoi aggiungere grafici personalizzati, riordinarli, nasconderli. Premi <strong>💾 Salva</strong> per confermare.</span>
+    </div>
+
+    <!-- Aggiungi grafico personalizzato -->
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div class="card-title">➕ Aggiungi Grafico da Campo Form</div>
+      <div style="display:grid;grid-template-columns:1fr 120px 120px auto;gap:8px;align-items:end;flex-wrap:wrap">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Campo (id)</label>
+          <select id="ab-field-pick" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Tipo grafico</label>
+          <select id="ab-chart-type" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none">
+            <option value="bar_pnl">Barre P&L</option>
+            <option value="bar_wr">Barre Win Rate</option>
+            <option value="doughnut">Torta</option>
+            <option value="table">Tabella</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Larghezza</label>
+          <select id="ab-chart-width" style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none">
+            <option value="half">Metà (½)</option>
+            <option value="full">Piena (1)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" style="align-self:flex-end" onclick="abAddWidget()">＋ Aggiungi</button>
+      </div>
+    </div>
+
+    <!-- Lista widget ordinabile -->
+    <div class="card-title">Grafici attivi — trascina per riordinare, ↑↓ per spostare</div>
+    <div id="ab-widget-list"></div>
+  </div>
+</div>
+
+<style>
+/* ── ANALYTICS WIDGET LAYOUT ─────────────────────── */
+.analytics-row {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.analytics-row.row-1 { grid-template-columns: 1fr; }
+.analytics-row.row-2 { grid-template-columns: 1fr 1fr; }
+@media(max-width:800px){ .analytics-row.row-2{ grid-template-columns:1fr; } }
+
+.analytics-widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.widget-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* ── AB WIDGET LIST ──────────────────────────────── */
+.ab-widget-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: 24px 1fr auto auto auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.ab-drag-handle {
+  color: var(--text3);
+  cursor: grab;
+  font-size: 14px;
+  user-select: none;
+  text-align: center;
+}
+
+.ab-widget-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ab-widget-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ab-widget-meta {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--mono);
+}
+
+.ab-widget-toggle {
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1;
+}
+
+/* Special analytics table */
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.analytics-table th {
+  background: var(--bg3);
+  color: var(--text3);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 600;
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.analytics-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+.analytics-table tr:hover td { background: var(--bg3); }
+</style>
+<script>
+// ════════════════════════════════════════════
+// STORE
+// ════════════════════════════════════════════
+const STORE_KEY = 'tradejournal_v4';
+const RULES_KEY = 'tradejournal_rules_v4';
+
+let store = { backtests: [], currentId: null };
+
+function loadStore() {
+  try { const r = localStorage.getItem(STORE_KEY); if(r) store = JSON.parse(r); } catch(e){}
+}
+function saveStore() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(store));
+}
+
+function currentBT() {
+  return store.backtests.find(b => b.id === store.currentId) || null;
+}
+function currentTrades() {
+  const bt = currentBT();
+  return bt ? bt.trades : [];
+}
+
+// ════════════════════════════════════════════
+// BACKTEST MANAGEMENT
+// ════════════════════════════════════════════
+function renderBTSelector() {
+  const sel = document.getElementById('bt-selector');
+  sel.innerHTML = store.backtests.map(b =>
+    `<option value="${b.id}" ${b.id===store.currentId?'selected':''}>${b.name} (${b.trades.length} trade)</option>`
+  ).join('');
+  updateBTBadge();
+}
+
+function updateBTBadge() {
+  const bt = currentBT();
+  const badge = document.getElementById('bt-badge');
+  if (bt) {
+    badge.textContent = `${bt.asset} · ${bt.trades.length} trade`;
+    document.getElementById('form-bt-name').textContent = bt.name;
+  } else {
+    badge.textContent = '—';
+  }
+}
+
+function switchBT(id) {
+  store.currentId = id;
+  saveStore();
+  updateBTBadge();
+  renderStorico();
+  renderFormBTName();
+}
+
+function createBT() {
+  const name = document.getElementById('new-bt-name').value.trim();
+  const asset = document.getElementById('new-bt-asset').value.trim() || 'GER40';
+  if (!name) { alert('Inserisci un nome per la sessione.'); return; }
+  const id = 'bt_' + Date.now();
+  store.backtests.push({ id, name, asset, trades: [] });
+  store.currentId = id;
+  saveStore();
+  renderBTSelector();
+  updateBTBadge();
+  hideModal('modal-new-bt');
+  document.getElementById('new-bt-name').value = '';
+  document.getElementById('new-bt-asset').value = '';
+}
+
+function renameBT() {
+  const newName = document.getElementById('rename-bt-name').value.trim();
+  if (!newName) { alert('Inserisci un nome.'); return; }
+  const bt = currentBT();
+  if (bt) { bt.name = newName; saveStore(); renderBTSelector(); }
+  hideModal('modal-rename-bt');
+}
+
+function deleteBT() {
+  if (store.backtests.length <= 1) { alert('Non puoi eliminare l\'unica sessione. Creane una nuova prima.'); return; }
+  store.backtests = store.backtests.filter(b => b.id !== store.currentId);
+  store.currentId = store.backtests[0].id;
+  saveStore();
+  renderBTSelector();
+  updateBTBadge();
+  renderStorico();
+  hideModal('modal-delete-bt');
+}
+
+function renderFormBTName() {
+  const bt = currentBT();
+  document.getElementById('form-bt-name').textContent = bt ? bt.name : '—';
+}
+
+// ════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════
+function showPage(id, btn) {
+  // If leaving the rules page, auto-save if there are blocks rendered
+  const wasRules = document.getElementById('page-regole').classList.contains('active');
+  if (wasRules && id !== 'regole') {
+    const blocks = document.querySelectorAll('.rule-editable-block');
+    if (blocks.length > 0) {
+      rules = Array.from(blocks).map(b => ({
+        title:   b.querySelector('.rule-title-input').value,
+        content: b.querySelector('.rule-content-ta').value,
+      }));
+      localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+    }
+    saveFlowSteps();
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'storico')   { renderStorico(); }
+  if (id === 'analytics') { loadChartJS(renderAnalytics); }
+  if (id === 'balance')   { loadChartJS(renderBalance); }
+}
+
+// ════════════════════════════════════════════
+// MODALI
+// ════════════════════════════════════════════
+function showModal(id) {
+  if (id === 'modal-rename-bt') {
+    const bt = currentBT();
+    document.getElementById('rename-bt-name').value = bt ? bt.name : '';
+  }
+  if (id === 'modal-delete-bt') {
+    const bt = currentBT();
+    document.getElementById('del-bt-name-span').textContent = bt ? bt.name : '—';
+  }
+  if (id === 'modal-delete-selected') {
+    document.getElementById('del-sel-count').textContent = getSelectedIds().length;
+  }
+  if (id === 'modal-form-builder') {
+    renderFormBuilder();
+  }
+  if (id === 'modal-analytics-builder') {
+    openAnalyticsBuilder();
+  }
+  document.getElementById(id).style.display = 'flex';
+}
+function hideModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal-bg').forEach(m=>m.style.display='none'); });
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.style.display='none'; }));
+
+// ════════════════════════════════════════════
+// REGOLE EDITABILI
+// ════════════════════════════════════════════
+const DEFAULT_RULES = [
+  { title: 'Bias e Struttura', content: '→ Doppia rottura strutturale in M5 per determinare la bias\n→ Candela volumetrica con impulso > media e volumi INFERIORI = zona valida\n→ In consolidamento: valutare bias timeframe superiore (M15/H1)\n→ Non operare contro bias strong su H4/Daily' },
+  { title: 'Qualifica della Zona', content: '→ La zona è valida se la candela M5 ha impulso superiore alle precedenti\n→ Volumi INFERIORI alla media nella candela di impulso (assorbimento istituzionale)\n→ Il prezzo deve ritracciare o fare un test pulito della zona\n→ Zona invalidata se il prezzo chiude oltre con volumi alti' },
+  { title: 'Trigger M1 — Assorbimento', content: '→ Segnale 1: Candela piccola con PICCO di volumi alti\n→ Segnale 2: Candela opposta più grande con volumi inferiori\n→ Il trigger deve avvenire DENTRO la zona qualificata in M5\n→ Non entrare se il trigger è lontano dalla zona' },
+  { title: 'Weis Wave Volume', content: '→ Usare Weis Wave su TradingView per determinare chi comanda i volumi\n→ Long dominano: le onde rialziste hanno volume > onde ribassiste → bias long\n→ Short dominano: le onde ribassiste hanno volume > onde rialziste → bias short\n→ Equilibrio: volumi simili tra le onde → mercato efficiente/bilanciato, attenzione' },
+  { title: 'Mercato Efficiente vs Inefficiente', content: '→ Mercato INEFFICIENTE/SBILANCIATO: ha lasciato inefficienze (fair value gap, imbalance, zone non testate) → meglio per la strategia\n→ Mercato EFFICIENTE/BILANCIATO: ha riequilibrato tutte le zone → più difficile, evitare se possibile\n→ Preferire sempre setup in mercato inefficiente dove c\'è spazio per il TP' },
+  { title: 'Gestione Trade', content: '→ R:R fisso 1:2 — non modificare il target durante il trade\n→ Stop Loss: oltre il massimo/minimo della zona M5\n→ Take Profit: esattamente 2× il rischio\n→ Break Even: opzionale\n→ Nessuna gestione parziale — tutto o niente' },
+  { title: 'Filtri Operativi', content: '→ Asset: GER40 (indice tedesco)\n→ Sessioni preferite: Londra (09:00–12:00 CET), NY Cash (15:30–17:00 CET)\n→ Evitare NFP, BCE, Fed e eventi macro major\n→ Non operare nelle prime 5 min di sessione senza conferma volumetrica' },
+];
+
+let rules = [];
+
+function loadRules() {
+  try {
+    const r = localStorage.getItem(RULES_KEY);
+    if (r) { rules = JSON.parse(r); }
+    else { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); }
+  } catch(e) { rules = JSON.parse(JSON.stringify(DEFAULT_RULES)); }
+}
+
+const FLOW_KEY = 'tradejournal_flow_v4';
+
+function saveFlowSteps() {
+  const steps = document.querySelectorAll('.flow-step');
+  if (!steps.length) return;
+  const data = Array.from(steps).map(s => ({
+    num:   s.querySelector('.step-num')  ? s.querySelector('.step-num').innerText  : '',
+    title: s.querySelector('.step-title')? s.querySelector('.step-title').innerText: '',
+    desc:  s.querySelector('.step-desc') ? s.querySelector('.step-desc').innerText : '',
+  }));
+  localStorage.setItem(FLOW_KEY, JSON.stringify(data));
+}
+
+function loadFlowSteps() {
+  try {
+    const raw = localStorage.getItem(FLOW_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    const steps = document.querySelectorAll('.flow-step');
+    data.forEach((d, i) => {
+      if (!steps[i]) return;
+      const numEl   = steps[i].querySelector('.step-num');
+      const titleEl = steps[i].querySelector('.step-title');
+      const descEl  = steps[i].querySelector('.step-desc');
+      if (numEl)   numEl.innerText   = d.num;
+      if (titleEl) titleEl.innerText = d.title;
+      if (descEl)  descEl.innerText  = d.desc;
+    });
+  } catch(e) {}
+}
+
+function saveRules() {
+  const blocks = document.querySelectorAll('.rule-editable-block');
+  if (blocks.length === 0) return;
+  rules = Array.from(blocks).map(b => ({
+    title:   b.querySelector('.rule-title-input').value,
+    content: b.querySelector('.rule-content-ta').value,
+  }));
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+}
+
+function saveRulesExplicit() {
+  const blocks = document.querySelectorAll('.rule-editable-block');
+  if (blocks.length === 0) {
+    showRuleStatus('⚠ Nessun blocco da salvare.', 'var(--yellow)');
+    return;
+  }
+  rules = Array.from(blocks).map(b => ({
+    title:   b.querySelector('.rule-title-input').value,
+    content: b.querySelector('.rule-content-ta').value,
+  }));
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+  saveFlowSteps();
+  showRuleStatus('✅ Regole salvate!', 'var(--green)');
+}
+
+function showRuleStatus(msg, color) {
+  const el = document.getElementById('rules-save-status');
+  el.textContent = msg;
+  el.style.color = color;
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function resetRulesToDefault() {
+  if (!confirm('Ripristinare le regole predefinite? Le tue modifiche andranno perse.')) return;
+  rules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+  localStorage.setItem(RULES_KEY, JSON.stringify(rules));
+  localStorage.removeItem(FLOW_KEY);
+  renderRulesPage();
+  // Reset flow text to defaults
+  const defaults = [
+    {num:'01 / M5 BIAS',  title:'Doppia Rottura Strutturale', desc:'Identificare la direzione in M5 tramite doppia rottura di struttura. Valutare la candela volumetrica con impulso maggiore e volumi inferiori come zona chiave.'},
+    {num:'02 / ZONA',     title:'Ritracciamento / Test',       desc:'Attendere il ritracciamento verso la zona oppure un test di essa. Il prezzo deve rientrare in zona prima dell\'ingresso.'},
+    {num:'03 / M1 TRIGGER',title:'Assorbimento',              desc:'Scendere in M1 e attendere l\'assorbimento: candela piccola + picco volumi alti, seguita da candela opposta più grande con volumi inferiori.'},
+    {num:'04 / ESECUZIONE',title:'Entrata 1:2 Fisso',         desc:'R:R fisso 1:2. SL sotto/sopra la zona. TP al doppio del rischio.'},
+  ];
+  document.querySelectorAll('.flow-step').forEach((s, i) => {
+    if (!defaults[i]) return;
+    s.querySelector('.step-num').innerText   = defaults[i].num;
+    s.querySelector('.step-title').innerText = defaults[i].title;
+    s.querySelector('.step-desc').innerText  = defaults[i].desc;
+  });
+  showRuleStatus('↺ Regole ripristinate.', 'var(--accent)');
+}
+
+function renderRulesPage() {
+  const container = document.getElementById('rules-blocks-container');
+  container.innerHTML = rules.map((r, i) => `
+    <div class="rule-block rule-editable-block" data-idx="${i}">
+      <div class="rule-block-header">
+        <h3><input class="rule-title-input" type="text" value="${escHtml(r.title)}" placeholder="Titolo blocco…" oninput="markDirty()"></h3>
+        <button class="btn btn-danger btn-sm" onclick="removeRuleBlock(${i})" title="Rimuovi blocco">✕</button>
+      </div>
+      <div class="rule-content">
+        <textarea class="rule-content-ta" placeholder="Scrivi le regole qui… (una per riga)" oninput="markDirty()">${escHtml(r.content)}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function markDirty() {
+  const el = document.getElementById('rules-save-status');
+  el.textContent = '● Modifiche non salvate';
+  el.style.color = 'var(--yellow)';
+}
+
+function addRuleBlock() {
+  // collect current state first before pushing new block
+  const blocks = document.querySelectorAll('.rule-editable-block');
+  if (blocks.length > 0) {
+    rules = Array.from(blocks).map(b => ({
+      title:   b.querySelector('.rule-title-input').value,
+      content: b.querySelector('.rule-content-ta').value,
+    }));
+  }
+  rules.push({ title: 'Nuovo Blocco', content: '' });
+  renderRulesPage();
+  markDirty();
+  const newBlocks = document.querySelectorAll('.rule-editable-block');
+  if (newBlocks.length) newBlocks[newBlocks.length-1].scrollIntoView({behavior:'smooth'});
+}
+
+function removeRuleBlock(i) {
+  if (!confirm('Rimuovere questo blocco di regole?')) return;
+  // collect current state first
+  const blocks = document.querySelectorAll('.rule-editable-block');
+  if (blocks.length > 0) {
+    rules = Array.from(blocks).map(b => ({
+      title:   b.querySelector('.rule-title-input').value,
+      content: b.querySelector('.rule-content-ta').value,
+    }));
+  }
+  rules.splice(i, 1);
+  renderRulesPage();
+  markDirty();
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════
+// ASSET
+// ════════════════════════════════════════════
+function updateAsset(v) {
+  document.getElementById('asset-display').textContent = v || '—';
+  document.getElementById('f-asset').value = v;
+}
+
+// ════════════════════════════════════════════
+// IMPOSTAZIONI (asset, conto, equity, rischio)
+// ════════════════════════════════════════════
+const SETTINGS_KEY = 'tradejournal_settings_v4';
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    document.getElementById('asset-input').value  = s.asset   || 'GER40';
+    document.getElementById('conto-default').value = s.conto  || 'BACKTEST';
+    document.getElementById('eq-iniziale').value   = s.equity !== undefined ? s.equity : 200000;
+    document.getElementById('rischio-pct').value   = s.rischio !== undefined ? s.rischio : 1;
+    updateAsset(document.getElementById('asset-input').value);
+  } catch(e) {
+    document.getElementById('asset-input').value   = 'GER40';
+    document.getElementById('conto-default').value = 'BACKTEST';
+    document.getElementById('eq-iniziale').value   = 200000;
+    document.getElementById('rischio-pct').value   = 1;
+  }
+}
+
+function saveSettings() {
+  const s = {
+    asset:   document.getElementById('asset-input').value.trim() || 'GER40',
+    conto:   document.getElementById('conto-default').value.trim() || 'BACKTEST',
+    equity:  parseFloat(document.getElementById('eq-iniziale').value) || 200000,
+    rischio: parseFloat(document.getElementById('rischio-pct').value) || 1,
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  updateAsset(s.asset);
+  const el = document.getElementById('settings-save-status');
+  el.textContent = '✅ Salvato!';
+  el.style.color = 'var(--green)';
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+// ════════════════════════════════════════════
+// FORM BUILDER — configurazione dinamica
+// ════════════════════════════════════════════
+const FORM_CFG_KEY = 'tradejournal_formcfg_v4';
+
+// Configurazione default (sezioni + campi personalizzabili)
+const DEFAULT_FORM_CFG = [
+  {
+    id: 'sec_base', title: 'Dati Trade',
+    fields: [
+      { id: 'f-sessione', label: 'Sessione',        type: 'select', opts: 'LONDRA\nPRE NY\nCASH\nASIA' },
+      { id: 'f-ora-a',   label: 'Orario Apertura',  type: 'time',   opts: '' },
+      { id: 'f-ora-c',   label: 'Orario Chiusura',  type: 'time',   opts: '' },
+      { id: 'f-bias',    label: 'BIAS M5',           type: 'select', opts: 'Long\nShort\nConsolidamento' },
+      { id: 'f-apertura',label: 'Prezzo Apertura',   type: 'number', opts: '' },
+      { id: 'f-sl',      label: 'Stop Loss',          type: 'number', opts: '' },
+      { id: 'f-rr',      label: 'R:R (es. 1:2)',       type: 'text',   opts: '' },
+    ]
+  },
+  {
+    id: 'sec_mercato', title: 'Contesto Mercato',
+    fields: [
+      { id: 'f-asia',    label: 'Bias Asiatica',     type: 'select', opts: 'Long\nShort\nConsolidamento\nConsolidamento alta Vol' },
+      { id: 'f-weis',    label: 'Weis Wave (volumi)', type: 'select', opts: 'long_dominano|Long dominano 🟢\nshort_dominano|Short dominano 🔴\nequilibrio|Equilibrio ⚖️' },
+      { id: 'f-favore',  label: 'Favore Bias',       type: 'select', opts: 'Sì|Sì ✅\nNO|No ❌' },
+    ]
+  },
+  {
+    id: 'sec_links', title: 'Link e Note',
+    fields: [
+      { id: 'f-img',     label: 'Link Setup (TradingView)',  type: 'url',      opts: '' },
+      { id: 'f-analisi', label: 'Link Analisi Dopo',         type: 'url',      opts: '' },
+      { id: 'f-note',    label: 'Note',                      type: 'textarea', opts: '' },
+    ]
+  }
+];
+
+let formCfg = [];
+
+function loadFormCfg() {
+  try {
+    const raw = localStorage.getItem(FORM_CFG_KEY);
+    formCfg = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_FORM_CFG));
+  } catch(e) {
+    formCfg = JSON.parse(JSON.stringify(DEFAULT_FORM_CFG));
+  }
+  // ── MIGRAZIONE 1: aggiungi f-rr dopo f-sl se manca ──
+  const allFields = formCfg.flatMap(s => s.fields);
+  if (!allFields.find(f => f.id === 'f-rr')) {
+    for (const sec of formCfg) {
+      const slIdx = sec.fields.findIndex(f => f.id === 'f-sl');
+      if (slIdx !== -1) {
+        sec.fields.splice(slIdx + 1, 0, { id:'f-rr', label:'R:R (es. 1:2)', type:'text', opts:'' });
+        break;
+      }
+    }
+    if (!formCfg.flatMap(s=>s.fields).find(f=>f.id==='f-rr')) {
+      formCfg[0].fields.push({ id:'f-rr', label:'R:R (es. 1:2)', type:'text', opts:'' });
+    }
+    localStorage.setItem(FORM_CFG_KEY, JSON.stringify(formCfg));
+  }
+  // ── MIGRAZIONE 2: rimuovi f-mercato ──
+  let changed = false;
+  for (const sec of formCfg) {
+    const before = sec.fields.length;
+    sec.fields = sec.fields.filter(f => f.id !== 'f-mercato');
+    if (sec.fields.length !== before) changed = true;
+  }
+  if (changed) localStorage.setItem(FORM_CFG_KEY, JSON.stringify(formCfg));
+}
+
+function saveFormConfig() {
+  // collect from builder UI
+  const sections = document.querySelectorAll('.fb-section');
+  if (sections.length === 0) return;
+  formCfg = Array.from(sections).map(sec => {
+    const secId = sec.dataset.secid;
+    const title = sec.querySelector('.fb-section-name').value.trim() || 'Sezione';
+    const fields = Array.from(sec.querySelectorAll('.fb-field')).map(fEl => ({
+      id:    fEl.dataset.fid,
+      label: fEl.querySelector('.fb-field-label').value.trim() || 'Campo',
+      type:  fEl.querySelector('.fb-field-type').value,
+      opts:  fEl.querySelector('.fb-field-opts') ? fEl.querySelector('.fb-field-opts').value : '',
+    }));
+    return { id: secId, title, fields };
+  });
+  localStorage.setItem(FORM_CFG_KEY, JSON.stringify(formCfg));
+  renderDynamicForm();
+  const el = document.getElementById('fb-status');
+  el.textContent = '✅ Salvato!'; el.style.color = 'var(--green)';
+  setTimeout(() => { el.textContent = ''; }, 2500);
+}
+
+// ── Render del form di compilazione ───────────────────
+function renderDynamicForm() {
+  const container = document.getElementById('dynamic-sections-container');
+  container.innerHTML = formCfg.map(sec => {
+    const fieldsHtml = sec.fields.map(f => renderDynField(f)).join('');
+    return `
+      <hr class="divider">
+      <div class="card-title">${escHtml(sec.title)}</div>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+        ${fieldsHtml}
+      </div>`;
+  }).join('');
+}
+
+function renderDynField(f) {
+  const isTextarea = f.type === 'textarea';
+  const fullClass  = isTextarea ? ' form-full' : '';
+  let input = '';
+  if (f.type === 'select') {
+    const lines = (f.opts || '').split('\n').filter(l => l.trim());
+    const options = lines.map(l => {
+      const parts = l.split('|');
+      const val   = parts[0].trim();
+      const lbl   = parts[1] ? parts[1].trim() : val;
+      return `<option value="${escHtml(val)}">${escHtml(lbl)}</option>`;
+    }).join('');
+    input = `<select id="${f.id}" class="dyn-field"><option value="">— Seleziona —</option>${options}</select>`;
+  } else if (f.type === 'textarea') {
+    input = `<textarea id="${f.id}" class="dyn-field" placeholder="…"></textarea>`;
+  } else {
+    const step = f.type === 'number' ? ' step="any"' : '';
+    input = `<input type="${f.type}" id="${f.id}" class="dyn-field"${step} placeholder="">`;
+  }
+  return `<div class="form-group${fullClass}"><label>${escHtml(f.label)}</label>${input}</div>`;
+}
+
+// ── Render del Form Builder (editor) ──────────────────
+function renderFormBuilder() {
+  const container = document.getElementById('fb-sections');
+  container.innerHTML = formCfg.map((sec, si) => {
+    const fieldsHtml = sec.fields.map((f, fi) => renderFBField(si, fi, f)).join('');
+    return `
+      <div class="fb-section" data-secid="${sec.id}">
+        <div class="fb-section-header">
+          <strong style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Sezione:</strong>
+          <input class="fb-section-name" type="text" value="${escHtml(sec.title)}" placeholder="Nome sezione">
+          <button class="btn btn-ghost btn-sm" onclick="fbMoveSection(${si},-1)" title="Su">↑</button>
+          <button class="btn btn-ghost btn-sm" onclick="fbMoveSection(${si},1)"  title="Giù">↓</button>
+          <button class="btn btn-danger btn-sm" onclick="fbRemoveSection(${si})" title="Elimina sezione">🗑</button>
+        </div>
+        <div class="fb-fields" id="fb-fields-${si}">${fieldsHtml}</div>
+        <div class="fb-add-field">
+          <button class="btn btn-ghost btn-sm" onclick="fbAddField(${si})">＋ Aggiungi campo</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderFBField(si, fi, f) {
+  const showOpts = f.type === 'select';
+  const optsBlock = showOpts
+    ? `<textarea class="fb-field-opts" placeholder="un'opzione per riga\noppure: valore|etichetta">${escHtml(f.opts||'')}</textarea>
+       <div class="fb-opts-hint">Una opzione per riga. Formato: <code>valore|Etichetta visibile</code> oppure solo <code>testo</code></div>`
+    : `<textarea class="fb-field-opts" style="display:none"></textarea>`;
+
+  // Build section options for "move to section" dropdown
+  const secOptions = formCfg.map((sec, idx) =>
+    `<option value="${idx}" ${idx === si ? 'selected' : ''}>${escHtml(sec.title)}</option>`
+  ).join('');
+
+  return `
+    <div class="fb-field" data-fid="${f.id}">
+      <div class="fb-field-row">
+        <input class="fb-field-label" type="text" value="${escHtml(f.label)}" placeholder="Nome campo">
+        <select class="fb-field-type" onchange="fbTypeChange(this,${si},${fi})">
+          ${['text','number','select','time','date','url','textarea'].map(t =>
+            `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`
+          ).join('')}
+        </select>
+        <div class="fb-field-actions">
+          <button class="btn btn-ghost btn-sm" onclick="fbMoveField(${si},${fi},-1)" title="Su nella sezione">↑</button>
+          <button class="btn btn-ghost btn-sm" onclick="fbMoveField(${si},${fi},1)"  title="Giù nella sezione">↓</button>
+          <button class="btn btn-danger btn-sm" onclick="fbRemoveField(${si},${fi})" title="Rimuovi campo">✕</button>
+        </div>
+      </div>
+      <div class="fb-field-move-row">
+        <span class="fb-move-label">📦 Sposta in:</span>
+        <select class="fb-move-sec" onchange="fbMoveFieldToSection(${si},${fi},this.value)">
+          ${secOptions}
+        </select>
+      </div>
+      ${optsBlock}
+    </div>`;
+}
+
+// ── Azioni del builder ────────────────────────────────
+function fbCollectCurrent() {
+  const sections = document.querySelectorAll('.fb-section');
+  if (!sections.length) return;
+  formCfg = Array.from(sections).map((sec) => {
+    const secId = sec.dataset.secid;
+    const title = sec.querySelector('.fb-section-name').value.trim() || 'Sezione';
+    const fields = Array.from(sec.querySelectorAll('.fb-field')).map(fEl => ({
+      id:    fEl.dataset.fid,
+      label: fEl.querySelector('.fb-field-label').value.trim() || 'Campo',
+      type:  fEl.querySelector('.fb-field-type').value,
+      opts:  fEl.querySelector('.fb-field-opts') ? fEl.querySelector('.fb-field-opts').value : '',
+    }));
+    return { id: secId, title, fields };
+  });
+}
+
+function fbAddSection() {
+  fbCollectCurrent();
+  const newId = 'sec_custom_' + Date.now();
+  formCfg.push({ id: newId, title: 'Nuova Sezione', fields: [] });
+  renderFormBuilder();
+  document.querySelector(`[data-secid="${newId}"]`)?.scrollIntoView({behavior:'smooth'});
+  markFbDirty();
+}
+
+function fbRemoveSection(si) {
+  if (!confirm('Eliminare questa sezione e tutti i suoi campi?')) return;
+  fbCollectCurrent();
+  formCfg.splice(si, 1);
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbMoveSection(si, dir) {
+  fbCollectCurrent();
+  const ni = si + dir;
+  if (ni < 0 || ni >= formCfg.length) return;
+  [formCfg[si], formCfg[ni]] = [formCfg[ni], formCfg[si]];
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbAddField(si) {
+  fbCollectCurrent();
+  const newId = 'f_custom_' + Date.now();
+  formCfg[si].fields.push({ id: newId, label: 'Nuovo Campo', type: 'text', opts: '' });
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbRemoveField(si, fi) {
+  fbCollectCurrent();
+  formCfg[si].fields.splice(fi, 1);
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbMoveField(si, fi, dir) {
+  fbCollectCurrent();
+  const ni = fi + dir;
+  const arr = formCfg[si].fields;
+  if (ni >= 0 && ni < arr.length) {
+    // Same section move
+    [arr[fi], arr[ni]] = [arr[ni], arr[fi]];
+  } else if (ni < 0 && si > 0) {
+    // Move to end of previous section
+    const field = arr.splice(fi, 1)[0];
+    formCfg[si - 1].fields.push(field);
+  } else if (ni >= arr.length && si < formCfg.length - 1) {
+    // Move to start of next section
+    const field = arr.splice(fi, 1)[0];
+    formCfg[si + 1].fields.unshift(field);
+  }
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbMoveFieldToSection(fromSi, fromFi, toSiStr) {
+  fbCollectCurrent();
+  const toSi = parseInt(toSiStr);
+  if (toSi === fromSi) return;
+  const field = formCfg[fromSi].fields.splice(fromFi, 1)[0];
+  formCfg[toSi].fields.push(field);
+  renderFormBuilder();
+  // scroll to destination section so user sees where it went
+  const destSec = document.querySelectorAll('.fb-section')[toSi];
+  if (destSec) destSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  markFbDirty();
+}
+
+function fbTypeChange(sel, si, fi) {
+  fbCollectCurrent();
+  formCfg[si].fields[fi].type = sel.value;
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function fbResetDefault() {
+  if (!confirm('Ripristinare il form predefinito? Le personalizzazioni andranno perse.')) return;
+  formCfg = JSON.parse(JSON.stringify(DEFAULT_FORM_CFG));
+  renderFormBuilder();
+  markFbDirty();
+}
+
+function markFbDirty() {
+  const el = document.getElementById('fb-status');
+  if (el) { el.textContent = '● Non salvato'; el.style.color = 'var(--yellow)'; }
+}
+
+// ════════════════════════════════════════════
+// FORM — compilazione trade
+// ════════════════════════════════════════════
+function initForm() {
+  document.getElementById('f-data').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('f-asset').value = document.getElementById('asset-input').value || 'GER40';
+  document.getElementById('f-conto').value = document.getElementById('conto-default').value || 'BACKTEST';
+}
+
+function resetForm() {
+  // clear fixed fields
+  ['f-position','f-esito','f-pnl','f-conto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // clear all dynamic fields
+  document.querySelectorAll('.dyn-field').forEach(el => { el.value = ''; });
+  initForm();
+  setMsg('','');
+}
+
+function salvaTrade() {
+  const data  = document.getElementById('f-data').value;
+  const asset = document.getElementById('f-asset').value.trim();
+  const esito = document.getElementById('f-esito').value;
+  const pos   = document.getElementById('f-position').value;
+  if (!data || !asset || !esito || !pos) {
+    setMsg('⚠ Compila: data, asset, esito, position.', 'red');
+    return;
+  }
+  const bt = currentBT();
+  if (!bt) { setMsg('⚠ Nessuna sessione attiva. Creane una prima.', 'red'); return; }
+
+  // fixed fields
+  const trade = {
+    id:      Date.now(),
+    data,
+    asset:   asset.toUpperCase(),
+    conto:   (document.getElementById('f-conto').value || 'BACKTEST'),
+    position: pos,
+    esito,
+    pnl:     parseFloat(document.getElementById('f-pnl').value) || 0,
+  };
+
+  // dynamic fields — collect every .dyn-field by its id
+  document.querySelectorAll('.dyn-field').forEach(el => {
+    const key = el.id;
+    if (key) trade[key] = el.value;
+  });
+
+  bt.trades.push(trade);
+  saveStore();
+  renderBTSelector();
+  updateBTBadge();
+  setMsg('✅ Trade salvato in: ' + bt.name, 'green');
+  setTimeout(resetForm, 1500);
+}
+
+function setMsg(txt, color) {
+  const el = document.getElementById('form-msg');
+  el.textContent = txt;
+  el.style.color = color === 'green' ? 'var(--green)' : 'var(--red)';
+}
+
+// ════════════════════════════════════════════
+// STORICO
+// ════════════════════════════════════════════
+let filteredIds = []; // IDs currently shown in table
+
+function renderStorico() {
+  const trades = currentTrades();
+  const txt    = (document.getElementById('search-text').value||'').toLowerCase();
+  const fE     = document.getElementById('filter-esito').value;
+  const fP     = document.getElementById('filter-position').value;
+  const fS     = document.getElementById('filter-sessione').value;
+
+  let filtered = trades.filter(t => {
+    if (fE && t.esito !== fE) return false;
+    if (fP && t.position !== fP) return false;
+    if (fS && t.sessione !== fS) return false;
+    if (txt && !(
+      (t.asset||'').toLowerCase().includes(txt) ||
+      (t.note||'').toLowerCase().includes(txt) ||
+      (t.sessione||'').toLowerCase().includes(txt) ||
+      (t.data||'').includes(txt)
+    )) return false;
+    return true;
+  }).sort((a,b) => new Date(b.data) - new Date(a.data));
+
+  filteredIds = filtered.map(t => t.id);
+  updateSelectUI();
+
+  const tbody = document.getElementById('storico-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="15" class="empty-state">Nessun trade trovato.</td></tr>';
+    return;
+  }
+
+  const weisLabel = { long_dominano:'🟢 Long', short_dominano:'🔴 Short', equilibrio:'⚖️ Eq.' };
+  const mercatoLabel = { inefficiente:'📈 Ineffic.', efficiente:'↔️ Effic.' };
+
+  tbody.innerHTML = filtered.map((t, i) => {
+    const eC = t.esito==='TP'?'badge-tp':t.esito==='SL'?'badge-sl':'badge-be';
+    const pC = t.position==='Long'?'badge-long':'badge-short';
+    const pnl = t.pnl||0;
+    const pColor = pnl>0?'var(--green)':pnl<0?'var(--red)':'var(--text3)';
+    const links = [
+      (t.imgSetup||t['f-img'])   ? `<a href="${t.imgSetup||t['f-img']}" target="_blank" title="Setup">📷</a>` : '',
+      (t.imgAnalisi||t['f-analisi']) ? `<a href="${t.imgAnalisi||t['f-analisi']}" target="_blank" title="Analisi">📊</a>` : '',
+    ].filter(Boolean).join(' ');
+    const rr = t['f-rr'] || t.rr || '—';
+    const rrColor = rr !== '—' ? 'var(--accent)' : 'var(--text3)';
+    const sessione = t['f-sessione'] || t.sessione || '—';
+    const oraA = t['f-ora-a'] || t.oraA || '—';
+    const mercatoVal = t['f-mercato'] || t.mercato;
+    const asiaVal = t['f-asia'] || t.asia || '—';
+    const weisVal = t['f-weis'] || t.weis;
+    const noteVal = t['f-note'] || t.note || '';
+    return `<tr>
+      <td class="cb-col"><input type="checkbox" class="row-check" data-id="${t.id}" onchange="onRowCheck()"></td>
+      <td style="color:var(--text3);font-family:var(--mono)">${filtered.length-i}</td>
+      <td style="font-family:var(--mono);font-size:11px">${t.data}</td>
+      <td><span class="tag">${t.asset}</span></td>
+      <td><span class="badge ${pC}">${t.position}</span></td>
+      <td><span class="badge ${eC}">${t.esito}</span></td>
+      <td style="color:var(--text2);font-size:12px">${sessione}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${oraA}</td>
+      <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:${rrColor}">${rr}</td>
+      <td style="font-size:11px;color:var(--text2)">${asiaVal}</td>
+      <td style="font-size:11px">${weisLabel[weisVal]||'—'}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:${pColor}">${pnl>0?'+':''}${pnl.toFixed(0)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:11px" title="${noteVal.replace(/"/g,"'")}">
+        ${noteVal ? noteVal.slice(0,50)+(noteVal.length>50?'…':'') : '—'}
+      </td>
+      <td>${links||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="eliminaTrade(${t.id})" title="Elimina">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function onRowCheck() {
+  updateSelectUI();
+}
+
+function updateSelectUI() {
+  const checked = document.querySelectorAll('.row-check:checked').length;
+  const total   = document.querySelectorAll('.row-check').length;
+  document.getElementById('check-all').checked = total > 0 && checked === total;
+  document.getElementById('check-all-header').checked = total > 0 && checked === total;
+  const btn = document.getElementById('btn-delete-selected');
+  if (checked > 0) {
+    btn.style.display = 'inline-flex';
+    document.getElementById('selected-count').textContent = checked;
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = checked);
+  document.getElementById('check-all').checked = checked;
+  document.getElementById('check-all-header').checked = checked;
+  updateSelectUI();
+}
+
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(cb => parseInt(cb.dataset.id));
+}
+
+function deleteSelected() {
+  const ids = getSelectedIds();
+  const bt = currentBT();
+  if (!bt) return;
+  bt.trades = bt.trades.filter(t => !ids.includes(t.id));
+  saveStore();
+  renderBTSelector();
+  renderStorico();
+  hideModal('modal-delete-selected');
+}
+
+function deleteAllTrades() {
+  const bt = currentBT();
+  if (!bt) return;
+  bt.trades = [];
+  saveStore();
+  renderBTSelector();
+  renderStorico();
+  hideModal('modal-delete-all-trades');
+}
+
+function eliminaTrade(id) {
+  if (!confirm('Eliminare questo trade?')) return;
+  const bt = currentBT();
+  if (!bt) return;
+  bt.trades = bt.trades.filter(t => t.id !== id);
+  saveStore();
+  renderBTSelector();
+  renderStorico();
+}
+
+function esportaCSV() {
+  const trades = currentTrades();
+  const cols = ['data','asset','conto','sessione','oraA','oraC','position','bias','esito','pnl','mercato','asia','weis','favore','note'];
+  const header = cols.join(',');
+  const rows = trades.map(t => cols.map(c => `"${(t[c]??'').toString().replace(/"/g,'""')}"`).join(','));
+  const bt = currentBT();
+  const blob = new Blob([header+'\n'+rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (bt?bt.name.replace(/[^a-z0-9]/gi,'_'):'export')+'_trade_journal.csv';
+  a.click();
+}
+
+// ════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════
+const CI = {};
+function dC(id) { if(CI[id]){CI[id].destroy();delete CI[id];} }
+
+// ════════════════════════════════════════════
+// ANALYTICS LAYOUT ENGINE
+// ════════════════════════════════════════════
+const ANALYTICS_KEY = 'tradejournal_analytics_v4';
+
+// Default built-in widgets (always present unless hidden)
+const BUILTIN_WIDGETS = [
+  { id:'w_day',      type:'builtin', key:'day',      title:'Win Rate per Giorno',         width:'half', visible:true, order:0 },
+  { id:'w_session',  type:'builtin', key:'session',  title:'Win Rate per Sessione',       width:'half', visible:true, order:1 },
+  { id:'w_heatmap',  type:'builtin', key:'heatmap',  title:'Heatmap Trades per Ora',      width:'full', visible:true, order:2 },
+  { id:'w_esiti',    type:'builtin', key:'esiti',    title:'Distribuzione Esiti',         width:'half', visible:true, order:3 },
+  { id:'w_asia',     type:'builtin', key:'asia',     title:'Bias Asiatica — P&L',         width:'half', visible:true, order:4 },
+  { id:'w_trigger',  type:'builtin', key:'trigger',  title:'Trigger — Win Rate e P&L',   width:'half', visible:true, order:5 },
+  { id:'w_weis',     type:'builtin', key:'weis',     title:'Weis Wave — Dominio Volumi',  width:'half', visible:true, order:6 },
+  { id:'w_sessioni', type:'builtin', key:'sessioni', title:'P&L per Sessione',            width:'half', visible:true, order:7 },
+];
+
+let analyticsLayout = [];
+
+function loadAnalyticsLayout() {
+  try {
+    const raw = localStorage.getItem(ANALYTICS_KEY);
+    if (raw) {
+      analyticsLayout = JSON.parse(raw);
+      // Rimuovi w_mercato se presente
+      analyticsLayout = analyticsLayout.filter(w => w.id !== 'w_mercato');
+      // Merge: aggiungi builtin mancanti
+      BUILTIN_WIDGETS.forEach(bw => {
+        if (!analyticsLayout.find(w => w.id === bw.id)) {
+          analyticsLayout.push({ ...bw, order: analyticsLayout.length });
+        }
+      });
+    } else {
+      analyticsLayout = JSON.parse(JSON.stringify(BUILTIN_WIDGETS));
+    }
+  } catch(e) {
+    analyticsLayout = JSON.parse(JSON.stringify(BUILTIN_WIDGETS));
+  }
+  analyticsLayout.sort((a,b) => a.order - b.order);
+}
+
+function saveAnalyticsLayout() {
+  // Collect current order from AB list
+  const items = document.querySelectorAll('.ab-widget-item');
+  if (items.length > 0) {
+    items.forEach((item, idx) => {
+      const wid = item.dataset.wid;
+      const w = analyticsLayout.find(x => x.id === wid);
+      if (w) w.order = idx;
+    });
+    analyticsLayout.sort((a,b) => a.order - b.order);
+  }
+  localStorage.setItem(ANALYTICS_KEY, JSON.stringify(analyticsLayout));
+  const el = document.getElementById('ab-status');
+  el.textContent = '✅ Salvato!'; el.style.color = 'var(--green)';
+  setTimeout(() => { el.textContent = ''; }, 2500);
+  renderAnalytics();
+}
+
+// ── Get all select fields from current formCfg ────────
+function getSelectFields() {
+  const fields = [];
+  // Fixed selects
+  fields.push({ id:'f-position', label:'Position', opts:['Long','Short'] });
+  fields.push({ id:'f-esito',    label:'Esito',    opts:['TP','SL','BE'] });
+  // Dynamic selects from formCfg
+  formCfg.forEach(sec => {
+    sec.fields.forEach(f => {
+      if (f.type === 'select') {
+        const opts = (f.opts||'').split('\n').filter(l=>l.trim()).map(l => {
+          const p = l.split('|'); return p[0].trim();
+        });
+        fields.push({ id: f.id, label: f.label, opts });
+      }
+    });
+  });
+  return fields;
+}
+
+// ── Analytics Builder modal ────────────────────────────
+function openAnalyticsBuilder() {
+  // Populate field picker
+  const sel = document.getElementById('ab-field-pick');
+  const selFields = getSelectFields();
+  sel.innerHTML = selFields.map(f => `<option value="${f.id}">${f.label} (${f.id})</option>`).join('');
+  renderABList();
+}
+
+function renderABList() {
+  const container = document.getElementById('ab-widget-list');
+  const sorted = [...analyticsLayout].sort((a,b) => a.order - b.order);
+  container.innerHTML = sorted.map((w, idx) => {
+    const typeLabel = { bar_pnl:'Barre P&L', bar_wr:'Barre WR%', doughnut:'Torta', table:'Tabella', builtin:'Built-in' }[w.type] || w.type;
+    const eyeIcon = w.visible ? '👁' : '🙈';
+    const widthLabel = w.width === 'full' ? '↔ Piena' : '½ Metà';
+    return `<div class="ab-widget-item" data-wid="${w.id}" draggable="true"
+      ondragstart="abDragStart(event,${idx})" ondragover="abDragOver(event)" ondrop="abDrop(event,${idx})" ondragend="abDragEnd()">
+      <div class="ab-drag-handle" title="Trascina per riordinare">⠿</div>
+      <div class="ab-widget-info">
+        <div class="ab-widget-name">${w.title}</div>
+        <div class="ab-widget-meta">${typeLabel} · ${widthLabel}${w.fieldId ? ' · campo: '+w.fieldId : ''}</div>
+      </div>
+      <select class="ab-inline-sel" onchange="abToggleWidth('${w.id}',this.value)" style="background:var(--card);border:1px solid var(--border);border-radius:5px;padding:4px 7px;color:var(--text);font-size:11px;outline:none">
+        <option value="half" ${w.width==='half'?'selected':''}>½ Metà</option>
+        <option value="full" ${w.width==='full'?'selected':''}>Piena</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="abMoveWidget(${idx},-1)" title="Su">↑</button>
+      <button class="btn btn-ghost btn-sm" onclick="abMoveWidget(${idx},1)"  title="Giù">↓</button>
+      <span class="ab-widget-toggle" onclick="abToggleVisible('${w.id}')" title="${w.visible?'Nascondi':'Mostra'}">${eyeIcon}</span>
+      ${w.type !== 'builtin' ? `<button class="btn btn-danger btn-sm" onclick="abRemoveWidget('${w.id}')" title="Rimuovi">✕</button>` : '<div></div>'}
+    </div>`;
+  }).join('');
+
+  // Drag state
+  window._abDragIdx = null;
+}
+
+// Drag & drop reorder
+function abDragStart(e, idx) { window._abDragIdx = idx; e.currentTarget.style.opacity = '0.4'; }
+function abDragOver(e) { e.preventDefault(); }
+function abDragEnd() { document.querySelectorAll('.ab-widget-item').forEach(el => el.style.opacity='1'); }
+function abDrop(e, toIdx) {
+  e.preventDefault();
+  if (window._abDragIdx === null || window._abDragIdx === toIdx) return;
+  const sorted = [...analyticsLayout].sort((a,b)=>a.order-b.order);
+  const moved = sorted.splice(window._abDragIdx, 1)[0];
+  sorted.splice(toIdx, 0, moved);
+  sorted.forEach((w,i) => { const orig = analyticsLayout.find(x=>x.id===w.id); if(orig) orig.order=i; });
+  analyticsLayout.sort((a,b)=>a.order-b.order);
+  renderABList();
+  markAbDirty();
+}
+
+function abMoveWidget(idx, dir) {
+  const sorted = [...analyticsLayout].sort((a,b)=>a.order-b.order);
+  const ni = idx + dir;
+  if (ni < 0 || ni >= sorted.length) return;
+  [sorted[idx].order, sorted[ni].order] = [sorted[ni].order, sorted[idx].order];
+  analyticsLayout.sort((a,b)=>a.order-b.order);
+  renderABList();
+  markAbDirty();
+}
+
+function abToggleVisible(wid) {
+  const w = analyticsLayout.find(x=>x.id===wid);
+  if (w) { w.visible = !w.visible; renderABList(); markAbDirty(); }
+}
+
+function abToggleWidth(wid, val) {
+  const w = analyticsLayout.find(x=>x.id===wid);
+  if (w) { w.width = val; markAbDirty(); }
+}
+
+function abRemoveWidget(wid) {
+  if (!confirm('Rimuovere questo grafico?')) return;
+  analyticsLayout = analyticsLayout.filter(x=>x.id!==wid);
+  analyticsLayout.forEach((w,i)=>w.order=i);
+  renderABList();
+  markAbDirty();
+}
+
+function abAddWidget() {
+  const fieldId   = document.getElementById('ab-field-pick').value;
+  const chartType = document.getElementById('ab-chart-type').value;
+  const width     = document.getElementById('ab-chart-width').value;
+  if (!fieldId) return;
+  const selFields = getSelectFields();
+  const field = selFields.find(f=>f.id===fieldId);
+  const label = field ? field.label : fieldId;
+  const typeLabel = { bar_pnl:'P&L', bar_wr:'Win Rate', doughnut:'Torta', table:'Tabella' }[chartType]||'';
+  const newW = {
+    id: 'w_custom_'+Date.now(),
+    type: chartType,
+    fieldId,
+    title: `${label} — ${typeLabel}`,
+    width,
+    visible: true,
+    order: analyticsLayout.length,
+  };
+  analyticsLayout.push(newW);
+  renderABList();
+  markAbDirty();
+}
+
+function markAbDirty() {
+  const el = document.getElementById('ab-status');
+  if(el){ el.textContent='● Non salvato'; el.style.color='var(--yellow)'; }
+}
+
+// ── Render all analytics widgets ──────────────────────
+function renderAnalytics() {
+  const t = currentTrades();
+  const tot = t.length;
+  const tp = t.filter(x=>x.esito==='TP').length;
+  const sl = t.filter(x=>x.esito==='SL').length;
+  const be = t.filter(x=>x.esito==='BE').length;
+  const wr = tot ? ((tp/tot)*100).toFixed(1) : 0;
+  const totPnl = t.reduce((s,x)=>s+(x.pnl||0),0);
+  const grossProfit = t.filter(x=>x.pnl>0).reduce((s,x)=>s+x.pnl,0);
+  const grossLoss   = Math.abs(t.filter(x=>x.pnl<0).reduce((s,x)=>s+x.pnl,0));
+  const pf = grossLoss > 0 ? (grossProfit/grossLoss).toFixed(2) : grossProfit > 0 ? '∞' : '0';
+  let maxLoss=0,cur=0;
+  t.forEach(x=>{ if(x.esito==='SL'){cur++;maxLoss=Math.max(maxLoss,cur);}else cur=0; });
+
+  // KPI
+  document.getElementById('kpi-grid').innerHTML = [
+    {l:'Trade Totali',v:tot,c:''},
+    {l:'Win Rate',v:`${wr}%`,c:wr>=50?'green':'red'},
+    {l:'TP',v:tp,c:'green'},
+    {l:'SL',v:sl,c:'red'},
+    {l:'BE',v:be,c:''},
+    {l:'P&L Totale',v:`€${Math.round(totPnl)}`,c:totPnl>=0?'green':'red'},
+    {l:'Profit Factor',v:pf,c:parseFloat(pf)>=1.5?'green':parseFloat(pf)<1?'red':''},
+    {l:'Max Cons. SL',v:maxLoss,c:maxLoss>=4?'red':''},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value ${k.c}">${k.v}</div></div>`).join('');
+
+  // Build widget HTML in rows of (half+half) or (full)
+  const visible = analyticsLayout.filter(w=>w.visible).sort((a,b)=>a.order-b.order);
+  const container = document.getElementById('analytics-widgets-container');
+
+  // Group into rows: consecutive halves go 2-per-row, fulls get their own row
+  const rows = [];
+  let i = 0;
+  while (i < visible.length) {
+    const w = visible[i];
+    if (w.width === 'full') {
+      rows.push([w]);
+      i++;
+    } else {
+      // half: pair with next half if available
+      const next = visible[i+1];
+      if (next && next.width === 'half') {
+        rows.push([w, next]);
+        i += 2;
+      } else {
+        rows.push([w]);
+        i++;
+      }
+    }
+  }
+
+  // Destroy existing charts
+  Object.keys(CI).forEach(k => { if(!k.startsWith('chart-balance')&&!k.startsWith('chart-dd')&&!k.startsWith('chart-mensile')) dC(k); });
+
+  container.innerHTML = rows.map((row, ri) => {
+    const cls = row.length === 2 ? 'row-2' : 'row-1';
+    return `<div class="analytics-row ${cls}">${row.map(w => `<div class="analytics-widget" id="widget-${w.id}">${buildWidgetHTML(w)}</div>`).join('')}</div>`;
+  }).join('');
+
+  // Now render charts into canvases
+  visible.forEach(w => {
+    renderWidget(w, t, tp, sl, be, tot);
+  });
+}
+
+function buildWidgetHTML(w) {
+  const title = escHtml(w.title);
+  if (w.type === 'builtin') {
+    switch(w.key) {
+      case 'day':
+        return `<div class="card-title">${title}</div><div id="day-bars-container"><div class="empty-state" style="padding:20px">Nessun dato</div></div>`;
+      case 'session':
+        return `<div class="card-title">${title}</div><div class="session-grid" id="session-grid"></div>`;
+      case 'heatmap':
+        return `<div class="card-title">${title} (colore = P&amp;L medio)</div><div class="heatmap-grid" id="heatmap-grid"></div><div class="heatmap-labels"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>`;
+      default:
+        return `<div class="card-title">${title}</div><canvas id="chart-${w.key}" height="180"></canvas>`;
+    }
+  }
+  if (w.type === 'table') {
+    return `<div class="card-title">${title}</div><div id="table-${w.id}" class="table-wrap"></div>`;
+  }
+  return `<div class="card-title">${title}</div><canvas id="canvas-${w.id}" height="180"></canvas>`;
+}
+
+function renderWidget(w, t, tp, sl, be, tot) {
+  if (!w.visible) return;
+
+  if (w.type === 'builtin') {
+    renderBuiltinWidget(w, t, tp, sl, be, tot);
+    return;
+  }
+
+  // Custom select-field widget
+  const fieldId = w.fieldId;
+  const selFields = getSelectFields();
+  const field = selFields.find(f=>f.id===fieldId);
+  if (!field) return;
+
+  // Collect unique values from trades
+  const valueSet = new Set();
+  t.forEach(tr => { const v = tr[fieldId]; if(v) valueSet.add(v); });
+  // Also add from field opts
+  field.opts.forEach(o => valueSet.add(o));
+  const values = [...valueSet].filter(Boolean);
+
+  if (w.type === 'table') {
+    const rows = values.map(val => {
+      const group = t.filter(tr => tr[fieldId] === val);
+      const gTp = group.filter(x=>x.esito==='TP').length;
+      const gWr = group.length ? ((gTp/group.length)*100).toFixed(0) : 0;
+      const gPnl = group.reduce((s,x)=>s+(x.pnl||0),0);
+      const wrColor = gWr>=50?'var(--green)':gWr>0?'var(--yellow)':'var(--text3)';
+      const pColor  = gPnl>=0?'var(--green)':'var(--red)';
+      return `<tr>
+        <td style="font-weight:600;color:var(--text)">${escHtml(val)}</td>
+        <td>${group.length}</td>
+        <td style="color:${wrColor};font-family:var(--mono);font-weight:600">${gWr}%</td>
+        <td>${gTp}</td>
+        <td>${group.filter(x=>x.esito==='SL').length}</td>
+        <td>${group.filter(x=>x.esito==='BE').length}</td>
+        <td style="color:${pColor};font-family:var(--mono);font-weight:600">${gPnl>=0?'+':''}€${Math.round(gPnl)}</td>
+      </tr>`;
+    }).join('');
+    const el = document.getElementById(`table-${w.id}`);
+    if (el) el.innerHTML = `<table class="analytics-table">
+      <thead><tr><th>${field.label}</th><th>Trade</th><th>WR%</th><th>TP</th><th>SL</th><th>BE</th><th>P&L</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="empty-state">Nessun dato</td></tr>'}</tbody>
+    </table>`;
+    return;
+  }
+
+  // Chart
+  const canvasId = `canvas-${w.id}`;
+  dC(canvasId);
+  if (tot === 0) return;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (w.type === 'doughnut') {
+    const data = values.map(val => t.filter(tr=>tr[fieldId]===val).length);
+    const colors = ['rgba(59,130,246,.8)','rgba(16,185,129,.8)','rgba(245,158,11,.8)','rgba(239,68,68,.8)','rgba(168,85,247,.8)','rgba(236,72,153,.8)'];
+    CI[canvasId] = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels:values, datasets:[{ data, backgroundColor:colors.slice(0,values.length), borderWidth:0, hoverOffset:4 }] },
+      options:{ plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:11} } } }, cutout:'60%' }
+    });
+  } else if (w.type === 'bar_pnl') {
+    const data = values.map(val => t.filter(tr=>tr[fieldId]===val).reduce((s,x)=>s+(x.pnl||0),0));
+    CI[canvasId] = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:values, datasets:[{ data, backgroundColor:data.map(v=>v>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)'), borderRadius:5, borderWidth:0 }] },
+      options:{ plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#94a3b8'},grid:{display:false}}, y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'}} } }
+    });
+  } else if (w.type === 'bar_wr') {
+    const data = values.map(val => {
+      const g = t.filter(tr=>tr[fieldId]===val);
+      const gTp = g.filter(x=>x.esito==='TP').length;
+      return g.length ? parseFloat(((gTp/g.length)*100).toFixed(1)) : 0;
+    });
+    const totals = values.map(val => t.filter(tr=>tr[fieldId]===val).length);
+    CI[canvasId] = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:values.map((v,i)=>`${v} (${totals[i]})`), datasets:[{ data, backgroundColor:data.map(v=>v>=50?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)'), borderRadius:5, borderWidth:0 }] },
+      options:{ plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#94a3b8'},grid:{display:false}}, y:{max:100,min:0,ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#252d42'}} } }
+    });
+  }
+}
+
+function renderBuiltinWidget(w, t, tp, sl, be, tot) {
+  switch(w.key) {
+    case 'day': {
+      const dayMap={1:'Lun',2:'Mar',3:'Mer',4:'Gio',5:'Ven'};
+      const days=['Lun','Mar','Mer','Gio','Ven'];
+      const dayData={};
+      days.forEach(d=>dayData[d]={tp:0,tot:0,pnl:0});
+      t.forEach(x=>{ const d=new Date(x.data); const dn=dayMap[d.getDay()]; if(dn){dayData[dn].tot++;dayData[dn].pnl+=(x.pnl||0);if(x.esito==='TP')dayData[dn].tp++;} });
+      const maxP=Math.max(...days.map(d=>Math.abs(dayData[d].pnl)),1);
+      if(tot===0){ document.getElementById('day-bars-container').innerHTML='<div class="empty-state" style="padding:20px">Nessun dato</div>'; return; }
+      document.getElementById('day-bars-container').innerHTML=`<div class="day-bars">${days.map(d=>{
+        const v=dayData[d].pnl; const h=Math.max(4,(Math.abs(v)/maxP)*100);
+        const col=v>=0?'var(--green)':'var(--red)';
+        const wr2=dayData[d].tot?((dayData[d].tp/dayData[d].tot)*100).toFixed(0):0;
+        return `<div class="day-bar-wrap" data-tip="${d}: ${dayData[d].tot} trade, WR ${wr2}%, P&L €${Math.round(v)}">
+          <div class="day-bar-val">${wr2}%</div>
+          <div class="day-bar" style="height:${h}%;background:${col}"></div>
+          <div class="day-bar-label">${d}</div></div>`;
+      }).join('')}</div>`;
+      break;
+    }
+    case 'session': {
+      const sessions=['LONDRA','PRE NY','CASH','ASIA'];
+      document.getElementById('session-grid').innerHTML=sessions.map(s=>{
+        const st=t.filter(x=>x['f-sessione']===s||x.sessione===s);
+        const stTp=st.filter(x=>x.esito==='TP').length;
+        const stWr=st.length?((stTp/st.length)*100).toFixed(0):0;
+        const stPnl=st.reduce((a,x)=>a+(x.pnl||0),0);
+        const c=stWr>=50?'var(--green)':stWr>0?'var(--yellow)':'var(--text3)';
+        return `<div class="session-card"><div class="s-name">${s}</div><div class="s-wr" style="color:${c}">${stWr}%</div><div class="s-sub">${st.length} trade · €${Math.round(stPnl)}</div></div>`;
+      }).join('');
+      break;
+    }
+    case 'heatmap': {
+      const hD=Array(24).fill(null).map(()=>({pnl:0,count:0}));
+      t.forEach(x=>{ const oraVal = x['f-ora-a']||x.oraA; if(oraVal){ const h=parseInt(oraVal.split(':')[0]); if(h>=0&&h<24){hD[h].count++;hD[h].pnl+=(x.pnl||0);} } });
+      const mxH=Math.max(...hD.map(d=>Math.abs(d.pnl)),1);
+      document.getElementById('heatmap-grid').innerHTML=hD.map((d,h)=>{
+        const avg=d.count?d.pnl/d.count:0;
+        const inten=Math.min(1,Math.abs(d.pnl)/mxH);
+        const col=avg>0?`rgba(16,185,129,${0.15+inten*0.75})`:avg<0?`rgba(239,68,68,${0.15+inten*0.75})`:'var(--bg3)';
+        return `<div class="heatmap-cell" style="background:${col}" data-tip="${h}:00 · ${d.count} trade · avg €${Math.round(avg)}"></div>`;
+      }).join('');
+      break;
+    }
+    case 'esiti': {
+      dC('chart-esiti');
+      if(tot>0){ CI['chart-esiti']=new Chart(document.getElementById('chart-esiti').getContext('2d'),{
+        type:'doughnut', data:{labels:['TP','SL','BE'],datasets:[{data:[tp,sl,be],backgroundColor:['rgba(16,185,129,.8)','rgba(239,68,68,.8)','rgba(245,158,11,.8)'],borderWidth:0,hoverOffset:4}]},
+        options:{plugins:{legend:{labels:{color:'#94a3b8',font:{size:12}}}},cutout:'65%'}
+      }); }
+      break;
+    }
+    case 'asia': {
+      dC('chart-asia');
+      const asiaVals=['Long','Short','Consolidamento','Consolidamento alta Vol'];
+      const asiaPnl=asiaVals.map(v=>t.filter(x=>(x['f-asia']||x.asia)===v).reduce((s,x)=>s+(x.pnl||0),0));
+      const asiaTots=asiaVals.map(v=>t.filter(x=>(x['f-asia']||x.asia)===v).length);
+      const asiaWr=asiaVals.map(v=>{ const g=t.filter(x=>(x['f-asia']||x.asia)===v); const gTp=g.filter(x=>x.esito==='TP').length; return g.length?((gTp/g.length)*100).toFixed(0):0; });
+      if(tot>0){ CI['chart-asia']=new Chart(document.getElementById('chart-asia').getContext('2d'),{
+        type:'bar',
+        data:{
+          labels:asiaVals.map((v,i)=>`${v} (${asiaTots[i]})`),
+          datasets:[
+            {label:'P&L €', data:asiaPnl, backgroundColor:asiaPnl.map(v=>v>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)'), borderRadius:4, borderWidth:0, yAxisID:'y'},
+            {label:'WR %',  data:asiaWr,  backgroundColor:'rgba(59,130,246,.3)', borderRadius:4, borderWidth:0, yAxisID:'y2'},
+          ]
+        },
+        options:{plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{
+          x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}},
+          y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'},position:'left'},
+          y2:{ticks:{color:'#6366f1',callback:v=>v+'%'},grid:{display:false},position:'right',min:0,max:100},
+        }}
+      }); }
+      break;
+    }
+    case 'trigger': {
+      dC('chart-trigger');
+      // Legge i valori unici dal campo f-trigger nei trade
+      const triggerVals = [...new Set(t.map(x=>x['f-trigger']).filter(Boolean))];
+      if (triggerVals.length === 0) {
+        const el = document.getElementById('chart-trigger');
+        if(el){ el.style.display='none'; el.insertAdjacentHTML('afterend','<div class="empty-state" style="padding:20px">Nessun dato Trigger ancora registrato.</div>'); }
+        break;
+      }
+      const tPnl=triggerVals.map(v=>t.filter(x=>x['f-trigger']===v).reduce((s,x)=>s+(x.pnl||0),0));
+      const tWr=triggerVals.map(v=>{ const g=t.filter(x=>x['f-trigger']===v); const gTp=g.filter(x=>x.esito==='TP').length; return g.length?((gTp/g.length)*100).toFixed(0):0; });
+      const tTots=triggerVals.map(v=>t.filter(x=>x['f-trigger']===v).length);
+      CI['chart-trigger']=new Chart(document.getElementById('chart-trigger').getContext('2d'),{
+        type:'bar',
+        data:{
+          labels:triggerVals.map((v,i)=>`${v} (${tTots[i]})`),
+          datasets:[
+            {label:'P&L €', data:tPnl, backgroundColor:tPnl.map(v=>v>=0?'rgba(16,185,129,.75)':'rgba(239,68,68,.75)'), borderRadius:4, borderWidth:0, yAxisID:'y'},
+            {label:'WR %',  data:tWr,  backgroundColor:'rgba(99,102,241,.35)', borderRadius:4, borderWidth:0, yAxisID:'y2'},
+          ]
+        },
+        options:{plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{
+          x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}},
+          y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'},position:'left'},
+          y2:{ticks:{color:'#6366f1',callback:v=>v+'%'},grid:{display:false},position:'right',min:0,max:100},
+        }}
+      });
+      break;
+    }
+    case 'weis': {
+      dC('chart-weis');
+      const wTypes=['long_dominano','short_dominano','equilibrio']; const wLabels=['Long dom.','Short dom.','Equilibrio'];
+      const wPnl=wTypes.map(w=>t.filter(x=>(x['f-weis']||x.weis)===w).reduce((s,x)=>s+(x.pnl||0),0));
+      if(tot>0){ CI['chart-weis']=new Chart(document.getElementById('chart-weis').getContext('2d'),{
+        type:'bar', data:{labels:wLabels,datasets:[{data:wPnl,backgroundColor:wPnl.map(v=>v>=0?'rgba(16,185,129,.7)':'rgba(239,68,68,.7)'),borderRadius:5,borderWidth:0}]},
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8'},grid:{display:false}},y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'}}}}
+      }); }
+      break;
+    }
+    case 'sessioni': {
+      dC('chart-sessioni');
+      const sessions=['LONDRA','PRE NY','CASH','ASIA'];
+      const sPnl=sessions.map(s=>t.filter(x=>(x['f-sessione']||x.sessione)===s).reduce((a,x)=>a+(x.pnl||0),0));
+      if(tot>0){ CI['chart-sessioni']=new Chart(document.getElementById('chart-sessioni').getContext('2d'),{
+        type:'bar', data:{labels:sessions,datasets:[{data:sPnl,backgroundColor:sPnl.map(v=>v>=0?'rgba(16,185,129,.7)':'rgba(239,68,68,.7)'),borderRadius:5,borderWidth:0}]},
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8'},grid:{display:false}},y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'}}}}
+      }); }
+      break;
+    }
+  }
+}
+
+function renderBalance() {
+  const sorted=[...currentTrades()].sort((a,b)=>new Date(a.data)-new Date(b.data));
+  const init=parseFloat(document.getElementById('eq-iniziale').value)||200000;
+  let eq=init, mxEq=init;
+  const eqC=[init], ddC=[0];
+  const labels=['Inizio'];
+  sorted.forEach((t,i)=>{
+    eq+=(t.pnl||0);
+    mxEq=Math.max(mxEq,eq);
+    eqC.push(eq);
+    ddC.push(((mxEq-eq)/mxEq*100).toFixed(2));
+    labels.push(`#${i+1}`);
+  });
+  const totPnl=eq-init;
+  const maxDD=Math.max(...ddC);
+  const gain=((totPnl/init)*100).toFixed(2);
+
+  document.getElementById('balance-kpi').innerHTML=[
+    {l:'Equity Corrente',v:`€${Math.round(eq)}`,c:eq>=init?'green':'red'},
+    {l:'Profitto Totale',v:`€${Math.round(totPnl)}`,c:totPnl>=0?'green':'red'},
+    {l:'Rendimento %',v:`${gain}%`,c:gain>=0?'green':'red'},
+    {l:'Max Drawdown',v:`${maxDD}%`,c:maxDD>10?'red':maxDD>5?'':'green'},
+    {l:'Totale Trade',v:sorted.length,c:'blue'},
+    {l:'Equity Max',v:`€${Math.round(mxEq)}`,c:''},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value ${k.c}">${k.v}</div></div>`).join('');
+
+  dC('chart-balance');
+  const cb=document.getElementById('chart-balance').getContext('2d');
+  const gr=cb.createLinearGradient(0,0,0,200);
+  gr.addColorStop(0,'rgba(59,130,246,.3)'); gr.addColorStop(1,'rgba(59,130,246,.01)');
+  CI['chart-balance']=new Chart(cb,{
+    type:'line',
+    data:{labels,datasets:[{data:eqC,borderColor:'#3b82f6',backgroundColor:gr,fill:true,pointRadius:eqC.length>60?0:3,tension:.3,borderWidth:2}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{color:'#94a3b8',callback:v=>'€'+Math.round(v).toLocaleString()},grid:{color:'#252d42'}}}}
+  });
+
+  dC('chart-dd');
+  CI['chart-dd']=new Chart(document.getElementById('chart-dd').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{data:ddC,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',fill:true,pointRadius:0,tension:.3,borderWidth:2}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#252d42'},reverse:true,min:0}}}
+  });
+
+  dC('chart-mensile');
+  const monthly={};
+  sorted.forEach(x=>{ const k=x.data.slice(0,7); monthly[k]=(monthly[k]||0)+(x.pnl||0); });
+  const mK=Object.keys(monthly).sort(), mV=mK.map(k=>monthly[k]);
+  CI['chart-mensile']=new Chart(document.getElementById('chart-mensile').getContext('2d'),{
+    type:'bar',
+    data:{labels:mK,datasets:[{data:mV,backgroundColor:mV.map(v=>v>=0?'rgba(16,185,129,.7)':'rgba(239,68,68,.7)'),borderRadius:4,borderWidth:0}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#94a3b8',callback:v=>'€'+v},grid:{color:'#252d42'}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// CHART.JS LAZY LOAD
+// ════════════════════════════════════════════
+function loadChartJS(cb){
+  if(window.Chart){cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+  s.onload=()=>{ Chart.defaults.color='#94a3b8'; Chart.defaults.font.family="'Inter',sans-serif"; cb(); };
+  document.head.appendChild(s);
+}
+
+// ════════════════════════════════════════════
+// SEED DATI STORICI
+// ════════════════════════════════════════════
+function seedInitial(){
+  if(store.backtests.length>0) return;
+  const id='bt_seed_eurusd';
+  const seed=[
+    {data:'2024-01-09',asset:'EURUSD',sessione:'LONDRA',oraA:'10:10',position:'Long',bias:'Short',esito:'SL',pnl:-2000,mercato:'inefficiente',asia:'Short',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-01-09',asset:'EURUSD',sessione:'CASH',oraA:'16:05',position:'Short',bias:'Short',esito:'BE',pnl:0,mercato:'efficiente',asia:'Short',weis:'short_dominano',favore:'Sì',note:''},
+    {data:'2024-01-10',asset:'EURUSD',sessione:'LONDRA',oraA:'09:20',position:'Short',bias:'Short',esito:'BE',pnl:0,mercato:'efficiente',asia:'Consolidamento',weis:'equilibrio',favore:'Sì',note:''},
+    {data:'2024-01-10',asset:'EURUSD',sessione:'LONDRA',oraA:'09:45',position:'Short',bias:'Short',esito:'TP',pnl:6284,mercato:'inefficiente',asia:'Consolidamento',weis:'short_dominano',favore:'Sì',note:'Test sul poc dopo BE'},
+    {data:'2024-01-11',asset:'EURUSD',sessione:'LONDRA',oraA:'09:30',position:'Short',bias:'Short',esito:'SL',pnl:-2043,mercato:'inefficiente',asia:'Long',weis:'long_dominano',favore:'Sì',note:''},
+    {data:'2024-01-11',asset:'EURUSD',sessione:'LONDRA',oraA:'10:05',position:'Short',bias:'Short',esito:'SL',pnl:-2022,mercato:'efficiente',asia:'Long',weis:'equilibrio',favore:'Sì',note:'Mutazione andata a stop subito'},
+    {data:'2024-01-15',asset:'EURUSD',sessione:'PRE NY',oraA:'14:45',position:'Short',bias:'Consolidamento',esito:'SL',pnl:-2002,mercato:'efficiente',asia:'Consolidamento',weis:'equilibrio',favore:'NO',note:''},
+    {data:'2024-01-18',asset:'EURUSD',sessione:'LONDRA',oraA:'09:30',position:'Short',bias:'Short',esito:'TP',pnl:5866,mercato:'inefficiente',asia:'Consolidamento',weis:'short_dominano',favore:'Sì',note:'Test Preso sul poc'},
+    {data:'2024-01-19',asset:'EURUSD',sessione:'LONDRA',oraA:'10:15',position:'Short',bias:'Long',esito:'TP',pnl:6263,mercato:'inefficiente',asia:'Short',weis:'short_dominano',favore:'NO',note:'Test sul poc ultimo breakout'},
+    {data:'2024-01-19',asset:'EURUSD',sessione:'CASH',oraA:'15:50',position:'Short',bias:'Long',esito:'SL',pnl:-2064,mercato:'efficiente',asia:'Short',weis:'equilibrio',favore:'NO',note:'Operazione aperta prima del DH sbilanciato'},
+    {data:'2024-01-30',asset:'EURUSD',sessione:'LONDRA',oraA:'09:35',position:'Short',bias:'Long',esito:'TP',pnl:6206,mercato:'inefficiente',asia:'Consolidamento',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-01-30',asset:'EURUSD',sessione:'PRE NY',oraA:'15:00',position:'Short',bias:'Long',esito:'TP',pnl:6392,mercato:'inefficiente',asia:'Consolidamento',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-01-31',asset:'EURUSD',sessione:'CASH',oraA:'15:35',position:'Short',bias:'Short',esito:'TP',pnl:6584,mercato:'inefficiente',asia:'Short',weis:'short_dominano',favore:'Sì',note:''},
+    {data:'2024-02-02',asset:'EURUSD',sessione:'LONDRA',oraA:'09:10',position:'Long',bias:'Short',esito:'TP',pnl:6825,mercato:'inefficiente',asia:'Short',weis:'long_dominano',favore:'NO',note:''},
+    {data:'2024-02-07',asset:'EURUSD',sessione:'LONDRA',oraA:'09:20',position:'Long',bias:'Short',esito:'TP',pnl:6959,mercato:'inefficiente',asia:'Consolidamento',weis:'long_dominano',favore:'NO',note:''},
+    {data:'2024-02-13',asset:'EURUSD',sessione:'LONDRA',oraA:'09:40',position:'Short',bias:'Short',esito:'TP',pnl:7120,mercato:'inefficiente',asia:'Long',weis:'short_dominano',favore:'Sì',note:''},
+    {data:'2024-02-13',asset:'EURUSD',sessione:'PRE NY',oraA:'14:20',position:'Short',bias:'Short',esito:'SL',pnl:-2380,mercato:'efficiente',asia:'Long',weis:'equilibrio',favore:'Sì',note:''},
+    {data:'2024-02-15',asset:'EURUSD',sessione:'LONDRA',oraA:'11:30',position:'Short',bias:'Long',esito:'TP',pnl:7294,mercato:'inefficiente',asia:'Long',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-02-19',asset:'EURUSD',sessione:'LONDRA',oraA:'09:00',position:'Short',bias:'Long',esito:'TP',pnl:7436,mercato:'inefficiente',asia:'Short',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-02-26',asset:'EURUSD',sessione:'LONDRA',oraA:'09:30',position:'Short',bias:'Long',esito:'TP',pnl:7453,mercato:'inefficiente',asia:'Consolidamento',weis:'short_dominano',favore:'NO',note:''},
+    {data:'2024-02-27',asset:'EURUSD',sessione:'LONDRA',oraA:'09:20',position:'Short',bias:'Long',esito:'SL',pnl:-2457,mercato:'efficiente',asia:'Long',weis:'long_dominano',favore:'NO',note:''},
+    {data:'2024-03-01',asset:'EURUSD',sessione:'LONDRA',oraA:'10:45',position:'Long',bias:'Long',esito:'TP',pnl:7573,mercato:'inefficiente',asia:'Long',weis:'long_dominano',favore:'Sì',note:''},
+    {data:'2024-03-04',asset:'EURUSD',sessione:'LONDRA',oraA:'10:00',position:'Long',bias:'Long',esito:'TP',pnl:7903,mercato:'inefficiente',asia:'Long',weis:'long_dominano',favore:'Sì',note:''},
+    {data:'2024-03-05',asset:'EURUSD',sessione:'LONDRA',oraA:'09:20',position:'Long',bias:'Long',esito:'BE',pnl:0,mercato:'efficiente',asia:'Long',weis:'equilibrio',favore:'Sì',note:''},
+    {data:'2024-03-05',asset:'EURUSD',sessione:'LONDRA',oraA:'10:50',position:'Long',bias:'Long',esito:'SL',pnl:-2587,mercato:'efficiente',asia:'Long',weis:'long_dominano',favore:'Sì',note:''},
+  ];
+  store.backtests=[{id,name:'BT1 — EURUSD Backtest (importato)',asset:'EURUSD',desc:'Dati importati dal vecchio foglio Excel',trades:seed.map((r,i)=>({id:Date.now()+i,...r}))}];
+  store.currentId=id;
+  saveStore();
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+loadStore();
+seedInitial();
+loadRules();
+loadSettings();
+loadFormCfg();
+loadAnalyticsLayout();
+renderBTSelector();
+updateBTBadge();
+renderFormBTName();
+renderRulesPage();
+loadFlowSteps();
+renderDynamicForm();
+initForm();
+loadChartJS(()=>{});
+</script>
+</body>
+</html>
